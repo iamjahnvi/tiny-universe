@@ -1,0 +1,159 @@
+body{
+  margin : 0;
+  font-family :Georgia, 'Times New Roman', Times, serif;
+  background:#080b18;
+  color:white
+}
+.app{
+  position : relative;
+  min-height : 100vh;
+  overflow:hidden;
+}
+
+.landing{
+  min-height : 100vh;
+  display:flex;
+  flex-direction : column;
+  justify-content : center;
+  align-items : center;
+  text-align:center;
+  background : #080b18;
+}
+.universe{
+  min-height : 100vh;
+  display:flex;
+  flex-direction : column;
+  justify-content : center;
+  align-items : center;
+  text-align:center;
+}
+
+.landing h1{
+  font-size : 64px;
+  font-weight : 400;
+  margin-top :50px;
+  color : white;
+  font-family:"Segoe Script", "Lucida Handwriting", cursive;
+}
+
+.landing h2{
+  font-size : px;
+  font-weight : 400;
+  opacity : 0.8;
+  margin : 20px 35px;
+  color : white;
+}
+
+.landing button{
+  padding : 12px 24px;
+  border : 1px solid white;
+  border-radius : 30px;
+  background: transparent;
+  color : white;
+  cursor : pointer;
+  font-size : 16px;
+}
+
+.universe h1{
+  font-size : 64px;
+  font-weight : 400;
+  margin :0;
+  color : white;
+
+}
+
+.landing p{
+  color:white;
+  font-size : 80px;
+  font-weight : 500;
+}
+
+.landing{
+  transition : opacity 1s ease , transform 1s ease;
+}
+
+.landing.leaving{
+  opacity : 0;
+  transform : scale(1.05);
+}
+
+.universe{
+  opacity : 0;
+  transform : scale(1);
+  background:#050714;
+  min-height : 100vh;
+  /* inset : 0; */
+  overflow : hidden;
+}
+
+.universe.entered{
+  background:#050714;
+  opacity : 1;
+  /* transform:scale(0.8); */
+  transition: transform 1s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+.star{
+  color:white;
+  font-size : 22px;
+  text-shadow : 0 0 8px white;
+  cursor : pointer;
+
+  /* first 0 - horizontal offset(movement of the shadow to left/right) */
+  /*second 0 - vertical offset(movement of the shadow to up/down) */
+  /* 8px - this controls how blurry/spread out the shadow is*/
+  /* white - shadow color */
+
+  animation : twinkle 2s infinite alternate;
+  /* twinkle - name of animation */
+  /* 2s - it will take 2seconds to complete one cycle*/
+  /* infinte : keeps repeating forever */
+  /* alternate - without alternate , every repetition starts from the beginning */
+}
+  @keyframes twinkle{
+    from{
+      opacity : 0.5;
+      transform : scale(0.5);
+    }
+    to{
+      opacity : 1;
+      transform : scale(1.5);
+    }
+  }
+  /* hover : when the user does something */
+  /* keyframes : which happens automatically */
+
+
+
+.star-fact {
+  display: none;
+  position: absolute;
+  left: 25px;
+  top: -10px;
+
+  width: 180px;
+  padding: 10px 14px;
+
+  background: rgba(15, 20, 45, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+
+  color: white;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.star:hover .star-fact {
+  display: block;
+}
+
+
+/* .stars{
+  position : absolute;
+  inset : 0;
+ } 
+
+.star{
+  position : absolute;
+}  */
+
