@@ -1,7 +1,6 @@
 import {useState} from 'react';
 import './App.css'
 
-
 function Landing({setIsEntered, setIsLeaving , isLeaving}){
   return(
     <div className={isLeaving ? 'leaving landing': 'landing'}>
@@ -34,48 +33,84 @@ function Universe(isEntered){
     "Stars produce energy through nuclear fusion, converting hydrogen into helium." ,
     "The Sun converts about 600 million tons of hydrogen into helium every second."
   ]
-  const stars = Array.from({length : 30});
+  const stars = Array.from({length : 100});
   // give me an array with 30 empty slots
 
-  const randomFact = facts[Math.floor(Math.random()*facts.length)]
+  const moonPhases = [
+    {
+      name: "New Moon",
+      moon: "🌑",
+      "moon-facts": [
+      "A new moon occurs when the Moon is between Earth and the Sun.",
+      "The side of the Moon facing Earth is not illuminated, making it nearly invisible in the sky.",
+      "New moons are the best time for stargazing since there's no moonlight to wash out fainter stars.",
+      "A solar eclipse can only happen during a new moon."
+    ]
+    },
+    {
+      name: "Waxing Crescent",
+      moon: "🌒",
+      "moon-facts": [
+      "The illuminated portion slowly grows each night.",
+      "\"Waxing\" means growing or increasing in visible size.",
+      "A crescent shape appears on the right side in the Northern Hemisphere.",
+      "This phase typically appears within a few days after the new moon."
+    ]
+    },
+    {
+      name: "First Quarter",
+      moon: "🌓",
+      "moon-facts": [
+      "Exactly half of the Moon's face is illuminated, and it grows fuller each night.",
+      "It's called 'first quarter' because the Moon has completed a quarter of its orbit around Earth.",
+      "Despite the half-lit appearance, this phase is often just called a 'half moon.'",
+      "The first quarter moon rises around noon and sets around midnight."
+    ]
+    },
+    {
+      name: "Waxing Gibbous",
+      moon: "🌔",
+      "moon-facts": [
+      "More than half of the Moon is illuminated as it approaches the full moon.",
+      "\"Gibbous\" comes from a Latin word meaning 'hump-backed' or 'humped.'",
+      "This phase occurs between the first quarter and the full moon.",
+      "The Moon rises later each day during this phase, in the late afternoon or evening."
+    ]
+    }
+  ];
 
-  // Math.random - gives any decimal value b/w 0 and 1.
   return(
-    // <div className='star'>
-    //   *
-    //   <div className='star-fact'>
-    //     {randomFact}
-    //   </div>
-    // </div>
-    <div className={isEntered?'universe entered':'universe'}>
-      <div className='sky'></div>
-
-      {stars.map((_, index) => {
-        const x = Math.random() * 100
-        const y = Math.random() * 100
-
-      return (
-        <div
-          className="star"
+    <>
+      {stars.map((_,index) => (
+        <div 
+          className='star' 
           key={index}
           style={{
-            left: `${x}%`,
-            top: `${y}%`
+            left: `${Math.random()*100}%` ,
+            top: `${Math.random()*100}%`
           }}
-          >
-      *
-      <div className="star-fact">
-        {facts[Math.floor(Math.random() * facts.length)]}
-      </div>
-    </div>
-  )
-})}
+        > *
+          <div className='star-fact'>{facts[Math.floor(Math.random()*facts.length)]}
+          </div>
+        </div>
+      ))}
 
-      <div className='moon'></div>
+      {/* writing phase inside bracket means that ,hey .map() , give me each item in moonPhases and while you are trying to access them , call each of them with name-phase */}
+
+    <div className='moon'></div>
+
+    <div className='moon-phases'>
+      {moonPhases.map((phase)=> {
+        <div className='moon-phase'>
+          <div>{phase.moon}</div>
+          <div>{phase.name}</div>
+          <div className='fact'>{phase[Math.floor(Math.random()*phase.length)]}</div>
+        </div>
+      })}
     </div>
+    </>
   )
 }
-
 function App() {
   const[isEntered,setIsEntered] = useState(false);
   const[isLeaving,setIsLeaving] = useState(false);
@@ -84,7 +119,7 @@ function App() {
     <>
       {isEntered ? <Universe/> : <Landing setIsEntered={setIsEntered} isLeaving={isLeaving}setIsLeaving={setIsLeaving}/> }
     </>
-    // this <> </> is called fragments
+    // this <></> is called fragments
   )
 }
 
