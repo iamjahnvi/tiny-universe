@@ -33,14 +33,14 @@ function Universe(isEntered){
     "Stars produce energy through nuclear fusion, converting hydrogen into helium." ,
     "The Sun converts about 600 million tons of hydrogen into helium every second."
   ]
-  const stars = Array.from({length : 100});
+  const stars = Array.from({length : 10});
   // give me an array with 30 empty slots
 
   const moonPhases = [
     {
       name: "New Moon",
-      moon: "🌑",
-      "moon-facts": [
+      moon: "new",
+      "moonFacts": [
       "A new moon occurs when the Moon is between Earth and the Sun.",
       "The side of the Moon facing Earth is not illuminated, making it nearly invisible in the sky.",
       "New moons are the best time for stargazing since there's no moonlight to wash out fainter stars.",
@@ -49,8 +49,8 @@ function Universe(isEntered){
     },
     {
       name: "Waxing Crescent",
-      moon: "🌒",
-      "moon-facts": [
+      moon: "wax-cre",
+      "moonFacts": [
       "The illuminated portion slowly grows each night.",
       "\"Waxing\" means growing or increasing in visible size.",
       "A crescent shape appears on the right side in the Northern Hemisphere.",
@@ -59,8 +59,8 @@ function Universe(isEntered){
     },
     {
       name: "First Quarter",
-      moon: "🌓",
-      "moon-facts": [
+      moon: "first-quar",
+      "moonFacts": [
       "Exactly half of the Moon's face is illuminated, and it grows fuller each night.",
       "It's called 'first quarter' because the Moon has completed a quarter of its orbit around Earth.",
       "Despite the half-lit appearance, this phase is often just called a 'half moon.'",
@@ -69,8 +69,8 @@ function Universe(isEntered){
     },
     {
       name: "Waxing Gibbous",
-      moon: "🌔",
-      "moon-facts": [
+      moon: "wax-gib",
+      "moonFacts": [
       "More than half of the Moon is illuminated as it approaches the full moon.",
       "\"Gibbous\" comes from a Latin word meaning 'hump-backed' or 'humped.'",
       "This phase occurs between the first quarter and the full moon.",
@@ -80,7 +80,7 @@ function Universe(isEntered){
   ];
 
   return(
-    <>
+    <div className='universe'>
       {stars.map((_,index) => (
         <div 
           className='star' 
@@ -100,15 +100,15 @@ function Universe(isEntered){
     <div className='moon'></div>
 
     <div className='moon-phases'>
-      {moonPhases.map((phase)=> {
+      {moonPhases.map((phase)=> (
         <div className='moon-phase'>
-          <div>{phase.moon}</div>
+          <div className={`phase-moon ${phase.moon}`}></div>
           <div>{phase.name}</div>
-          <div className='fact'>{phase[Math.floor(Math.random()*phase.length)]}</div>
-        </div>
-      })}
+          <div className='fact'>{phase.moonFacts[Math.floor(Math.random()*phase.moonFacts.length)]}</div>
+       </div>
+    ))}
     </div>
-    </>
+    </div>
   )
 }
 function App() {
@@ -124,3 +124,4 @@ function App() {
 }
 
 export default App;
+
