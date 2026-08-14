@@ -37,11 +37,13 @@ body{
 }
 
 .landing h2{
-  font-size : px;
+  font-size : 25px;
   font-weight : 400;
   opacity : 0.8;
   margin : 20px 35px;
   color : white;
+  font-family:"Garamond";
+  font-weight : 500;
 }
 
 .landing button{
@@ -66,6 +68,7 @@ body{
   color:white;
   font-size : 80px;
   font-weight : 500;
+  
 }
 
 .landing{
@@ -81,12 +84,48 @@ body{
   width : 100%;
   border : none;
   outline : none;
-  opacity : 0;
+  /* opacity : 0; */
   transform : scale(1);
-  background:#050714;
-  min-height : 100vh;
-  /* inset : 0; */
-  overflow : hidden;
+  /* background:
+    radial-gradient(circle at 50% 50%, rgba(70, 90, 150, 0.18), transparent 35%),
+    radial-gradient(circle at 20% 20%, rgba(80, 60, 150, 0.12), transparent 30%),
+    radial-gradient(circle at 80% 80%, rgba(30, 100, 140, 0.10), transparent 30%),
+    #050714; */
+    position : relative;
+    min-height:100vh;
+    overflow: hidden;
+    background:
+      radial-gradient(
+        ellipse at 50% 50%,
+        #17152f 0%,
+        #0c0d20 40%,
+        #050713 80%
+    );
+}
+
+.universe::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+
+  background:
+    radial-gradient(
+      ellipse at 30% 40%,
+      rgba(94, 72, 170, 0.18),
+      transparent 35%
+    ),
+    radial-gradient(
+      ellipse at 70% 60%,
+      rgba(50, 90, 170, 0.14),
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse at 50% 90%,
+      rgba(130, 55, 130, 0.10),
+      transparent 35%
+    );
+  filter: blur(50px);
+  pointer-events: none;
 }
 
 .universe.entered{
@@ -165,7 +204,7 @@ body{
   width : 100px;
   height : 100px;
   border-radius : 50%;
-  background-color : #cfcfc5;
+  /* background-color : #cfcfc5; */
   box-shadow : 0 0 25px rgba(220,220,210,0.4);
   display : flex;
   flex-direction: column;
@@ -178,6 +217,11 @@ body{
   transition : transform 2s ease;
   margin : 0;
   /* 2s is the time that it will take to show a transition */
+  background:
+  radial-gradient(circle at 30% 30%, #aaa99f 0 6%, transparent 7%),
+  radial-gradient(circle at 65% 60%, #aaa99f 0 8%, transparent 9%),
+  radial-gradient(circle at 45% 75%, #b5b4aa 0 5%, transparent 6%),
+  #cfcfc5;
 }
 .moon:hover {
   transform:scale(1.15);
@@ -188,8 +232,8 @@ body{
   left: 50%;
   top: 50%;
 
-  width: 350px;
-  height: 350px;
+  width: 650px;
+  height: 650px;
 
   transform: translate(-50%, -50%);
 
@@ -199,7 +243,8 @@ body{
   transition: opacity 0.4s ease;
 }
 
-.moon:hover + .moon-phases {
+.moon:hover + .moon-phases  , 
+.moon-phases:hover{
   opacity: 1;
   visibility: visible;
 }
@@ -211,8 +256,18 @@ body{
   width : 75px ;
   height : 75px;
   border-radius : 50%;
-  background-color: #cfcfc5;
+  background:
+  radial-gradient(circle at 30% 30%, #aaa99f 0 6%, transparent 7%),
+  radial-gradient(circle at 65% 60%, #aaa99f 0 8%, transparent 9%),
+  radial-gradient(circle at 45% 75%, #b5b4aa 0 5%, transparent 6%),
+  #cfcfc5;
   box-shadow : 0 0 12px rgba(220,220,210,0.35);
+
+  transition : transform 0.5s ease;
+}
+
+.moon-phase:hover .phase-moon{
+  transform : scale(1.15);
 }
 
 .new{
@@ -234,7 +289,7 @@ body{
   border-radius : 50%;
 
   background : #15192b;
-  left : 12px ;
+  left : 25px ;
   top : 0;
 }
 
@@ -274,9 +329,66 @@ body{
   top : 0;
 }
 
+.wan-gib {
+  position: relative;
+  overflow: hidden;
+}
+
+.wan-gib::after {
+  content: "";
+  position: absolute;
+
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+
+  background: #15192b;
+
+  left: -10px;
+  top: 0;
+}
+
+.third-quar {
+  position: relative;
+  overflow: hidden;
+}
+
+.third-quar::after {
+  content: "";
+  position: absolute;
+
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+
+  background: #15192b;
+
+  left: -38px;
+  top: 0;
+}
+.wan-cre {
+  position: relative;
+  overflow: hidden;
+}
+
+.wan-cre::after {
+  content: "";
+  position: absolute;
+
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+
+  background: #15192b;
+
+  left: -60px;
+  top: 0;
+}
+
 .moon-phase{
   position:absolute;
   text-align:center;
+  width : 120px;
 }
 
 .moon-phase:nth-child(1) {
@@ -300,5 +412,115 @@ body{
 .moon-phase:nth-child(4) {
   top: 50%;
   left: 0;
+  transform: translateY(-50%);
+}
+.moon-phase:nth-child(5) {
+  top: 12%;
+  right: 12%;
+}
+
+.moon-phase:nth-child(6) {
+  bottom: 12%;
+  right: 12%;
+}
+
+.moon-phase:nth-child(7) {
+  bottom: 12%;
+  left: 12%;
+}
+
+.moon-phase:nth-child(8) {
+  top: 12%;
+  left: 12%;
+}
+
+/* .fact{
+  display : none;
+} */
+
+.fact {
+  /* position: absolute;
+  top: 85px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 180px;
+
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+  width: 180px;
+
+  background: rgba(15, 20, 45, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: white;
+  font-size: 13px;
+  line-height: 1.4;
+  z-index: 10; */
+
+  position: absolute;
+  top: 125px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 180px;
+  padding: 10px 14px;
+
+  background: rgba(15, 20, 45, 0.95);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 12px;
+
+  color: white;
+  font-size: 13px;
+  line-height: 1.4;
+
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+  font-family:"Lucid Handwriting";
+}
+
+
+.moon-phase:hover .fact{
+  display : block;
+  opacity : 1;
+  visibility : visible;
+  /* font-family:"Lucid Handwriting"; */
+}
+
+
+.phase-name{
+  font-family:"Courier New";
+  font-size : 18px;
+  width : 85px;
+  font-weight: 600;
+}
+.star-fact{
+  font-family:"Courier New";
+}
+.moon-phase:nth-child(1) .fact,
+.moon-phase:nth-child(2) .fact {
+  top: 90px;
+}
+
+.moon-phase:nth-child(3) .fact,
+.moon-phase:nth-child(4) .fact {
+  left: 90px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.moon-phase:nth-child(5) .fact,
+.moon-phase:nth-child(6) .fact {
+  bottom: 90px;
+  top: auto;
+}
+.moon-phase:nth-child(7) .fact,
+.moon-phase:nth-child(8) .fact {
+  right: 90px;
+  left: auto;
+  top: 50%;
   transform: translateY(-50%);
 }
