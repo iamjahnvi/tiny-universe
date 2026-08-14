@@ -33,7 +33,7 @@ function Universe(isEntered){
     "Stars produce energy through nuclear fusion, converting hydrogen into helium." ,
     "The Sun converts about 600 million tons of hydrogen into helium every second."
   ]
-  const stars = Array.from({length : 10});
+  const stars = Array.from({length : 30});
   // give me an array with 30 empty slots
 
   const moonPhases = [
@@ -76,6 +76,46 @@ function Universe(isEntered){
       "This phase occurs between the first quarter and the full moon.",
       "The Moon rises later each day during this phase, in the late afternoon or evening."
     ]
+    } ,
+    {
+      name: "Full Moon",
+      moon: "full-moon",
+      moonFacts: [
+    "A full moon occurs when Earth is between the Sun and the Moon.",
+    "The entire side of the Moon facing Earth is illuminated.",
+    "A full moon rises around sunset and sets around sunrise.",
+    "The Moon is not actually producing its own light — it reflects sunlight."
+      ]
+    },
+    {
+      name: "Waning Gibbous",
+      moon: "wan-gib",
+      moonFacts: [
+    "The illuminated portion begins to decrease after the full moon.",
+    "\"Waning\" means becoming smaller or less.",
+    "This phase occurs between the full moon and third quarter.",
+    "A waning gibbous moon rises later in the evening."
+    ]
+  },
+  {
+      name: "Third Quarter",
+      moon: "third-quar",
+      moonFacts: [
+    "Half of the Moon is illuminated during the third quarter.",
+    "It is also called the last quarter moon.",
+    "The Moon is three-quarters of the way through its lunar cycle.",
+    "It rises around midnight and sets around noon."
+    ]
+  },
+  {
+      name: "Waning Crescent",
+      moon: "wan-cre",
+      moonFacts: [
+    "Only a small portion of the Moon remains illuminated.",
+    "This phase occurs just before the new moon.",
+    "The illuminated portion continues shrinking each night.",
+    "A waning crescent is best seen shortly before sunrise."
+      ]
     }
   ];
 
@@ -103,7 +143,7 @@ function Universe(isEntered){
       {moonPhases.map((phase)=> (
         <div className='moon-phase'>
           <div className={`phase-moon ${phase.moon}`}></div>
-          <div>{phase.name}</div>
+          <div className='phase-name'>{phase.name}</div>
           <div className='fact'>{phase.moonFacts[Math.floor(Math.random()*phase.moonFacts.length)]}</div>
        </div>
     ))}
