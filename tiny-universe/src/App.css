@@ -162,8 +162,8 @@ body{
 
 
 .moon{
-  width : 150px;
-  height : 150px;
+  width : 100px;
+  height : 100px;
   border-radius : 50%;
   background-color : #cfcfc5;
   box-shadow : 0 0 25px rgba(220,220,210,0.4);
@@ -171,15 +171,134 @@ body{
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin : 250px auto;
+  /* margin : 250px auto; */
   /* keep 250px from top and bottom */
   /* auto means keep equal spaces from right and left */
-
+  /* cursor: pointer; */
   transition : transform 2s ease;
+  margin : 0;
   /* 2s is the time that it will take to show a transition */
 }
-
-
 .moon:hover {
   transform:scale(1.15);
+}
+
+.moon-phases {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+
+  width: 350px;
+  height: 350px;
+
+  transform: translate(-50%, -50%);
+
+  opacity: 0;
+  visibility: hidden;
+
+  transition: opacity 0.4s ease;
+}
+
+.moon:hover + .moon-phases {
+  opacity: 1;
+  visibility: visible;
+}
+/* When .moon is hovered, select the .moon-phases immediately after it.  */
+
+.phase-moon{
+  /* whatever properties we'll give to, phase-moon , they will be common to all the moon's phases and then if we spcifically want some feature for a phase of moon , we write .new , .wax-cre etc , kinda class*/
+
+  width : 75px ;
+  height : 75px;
+  border-radius : 50%;
+  background-color: #cfcfc5;
+  box-shadow : 0 0 12px rgba(220,220,210,0.35);
+}
+
+.new{
+  background : #15192b;
+  box-shadow:none;
+}
+
+.wax-cre{
+  position : relative;
+  overflow:hidden;
+}
+
+.wax-cre::after{
+  content : "";
+  position : absolute;
+
+  width : 75px ;
+  height : 75px;
+  border-radius : 50%;
+
+  background : #15192b;
+  left : 12px ;
+  top : 0;
+}
+
+.first-quar{
+  position : relative;
+  overflow:hidden;
+}
+
+.first-quar::after{
+  content : "";
+  position : absolute;
+
+  width : 75px ;
+  height : 75px;
+  border-radius : 50%;
+
+  background : #15192b;
+  left : -32px ;
+  top : 0;
+}
+
+.wax-gib{
+  position : relative;
+  overflow:hidden;
+}
+
+.wax-gib::after{
+  content : "";
+  position : absolute;
+
+  width : 75px ;
+  height : 75px;
+  border-radius : 50%;
+
+  background : #15192b;
+  left : 60px ;
+  top : 0;
+}
+
+.moon-phase{
+  position:absolute;
+  text-align:center;
+}
+
+.moon-phase:nth-child(1) {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.moon-phase:nth-child(2) {
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+}
+
+.moon-phase:nth-child(3) {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.moon-phase:nth-child(4) {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
 }
