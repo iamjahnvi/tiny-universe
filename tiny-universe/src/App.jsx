@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState , useEffect} from 'react';
 import './App.css'
 
 function Landing({setIsEntered, setIsLeaving , isLeaving}){
@@ -17,7 +17,7 @@ function Landing({setIsEntered, setIsLeaving , isLeaving}){
 // State lives in the parent, but the child can change it through a function passed as a prop.
 // This is called lifting state up / passing callbacks, and you'll use it constantly in React.
 
-function Universe(isEntered){
+function Universe(isEntered){const[showShootingStar,setShowShootingStar]=useState(false);
   const facts =[
     "The nearest star to Earth (other than the Sun) is Proxima Centauri, 4.24 light-years away." ,
     "The Sun makes up about 99.86% of the mass in our solar system." ,
@@ -138,6 +138,8 @@ function Universe(isEntered){
       {/* writing phase inside bracket means that ,hey .map() , give me each item in moonPhases and while you are trying to access them , call each of them with name-phase */}
 
     <div className='moon'></div>
+
+    <div className='shooting-star'></div>
 
     <div className='moon-phases'>
       {moonPhases.map((phase)=> (
