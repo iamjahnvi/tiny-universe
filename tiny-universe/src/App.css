@@ -201,6 +201,7 @@ body{
 
 
 .moon{
+  z-index : 10;
   width : 100px;
   height : 100px;
   border-radius : 50%;
@@ -231,7 +232,7 @@ body{
   position: absolute;
   left: 50%;
   top: 50%;
-
+  z-index : 10;
   width: 650px;
   height: 650px;
 
@@ -243,12 +244,13 @@ body{
   transition: opacity 0.4s ease;
 }
 
-.moon:hover + .moon-phases  , 
+.moon:hover ~ .moon-phases  , 
 .moon-phases:hover{
   opacity: 1;
   visibility: visible;
 }
-/* When .moon is hovered, select the .moon-phases immediately after it.  */
+/* + = When .moon is hovered, select the .moon-phases immediately after it.  
+  ~ = When .moon is hovered ,select the sibling of it, maybe, may not be immediately after it*/
 
 .phase-moon{
   /* whatever properties we'll give to, phase-moon , they will be common to all the moon's phases and then if we spcifically want some feature for a phase of moon , we write .new , .wax-cre etc , kinda class*/
@@ -434,32 +436,9 @@ body{
   left: 12%;
 }
 
-/* .fact{
-  display : none;
-} */
 
 .fact {
-  /* position: absolute;
-  top: 85px;
-  left: 50%;
-  transform: translateX(-50%);
-
-  width: 180px;
-
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease;
-  width: 180px;
-
-  background: rgba(15, 20, 45, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 10px 14px;
-  color: white;
-  font-size: 13px;
-  line-height: 1.4;
-  z-index: 10; */
-
+ 
   position: absolute;
   top: 125px;
   left: 50%;
@@ -539,7 +518,7 @@ body{
 
   box-shadow: 0 0 8px white, 0 0 20px white;
 
-  animation: shooting 1.5s linear forwards;
+  animation: shooting 2s linear forwards;
 }
 
 .shooting-star span {
@@ -553,7 +532,7 @@ body{
   font-size: 16px;
 
   opacity: 0;
-  animation: wish-text 1.5s ease forwards;
+  animation: wish-text 1s ease forwards;
 }
 
 @keyframes shooting {
@@ -562,7 +541,10 @@ body{
   }
 
   to {
-    transform: translate(-500px, 350px);
+    transform: translate(-120vw,120vh);
+    /* 100vw : entrie width of your browser
+    120vw : outside of the browser screen 
+    60vh : controls how far down it travels. */
   }
 }
 
@@ -595,3 +577,21 @@ body{
     0 0 10px #8fd3ff,
     0 0 18px #8fd3ff;
 }
+
+.shooting-star{
+  position : absolute;
+  cursor : pointer;
+  pointer-events : none;
+}
+
+.shooting-star-hitbox{
+  position : absolute;
+  width : 400px;
+  height:400px;
+  display:flex;
+  z-index : 2;
+}
+
+.shooting-star-hitbox:hover .shooting-star {
+  animation-play-state: paused;
+} 
