@@ -1,5 +1,6 @@
 import {useState , useEffect} from 'react';
 import './App.css'
+import MusicPlayer from './MusicPlayer';
 
 function Landing({setIsEntered, setIsLeaving , isLeaving}){
   return(
@@ -23,13 +24,13 @@ function Universe(isEntered){
   const[wishMade,setWishMade] = useState(false);
 
   useEffect(()=>{
-    const timer = setTimeout(()=>{
-      setShowShootingStar(true);
+    const timer = setInterval(()=>{
+      setShowShootingStar(true) 
     } , 5000);
 
     return () => clearTimeout(timer);
     // setTimeout sets a timer in the browser, so by writing this we are cleaning up that.
-  } , []);
+  } , [showShootingStar]);
 
 
   const facts =[
@@ -135,6 +136,8 @@ function Universe(isEntered){
 
   return(
     <div className='universe'>
+      <MusicPlayer />
+      {/* rendered music player */}
       {stars.map((_,index) => (
         <div 
           className='star' 
@@ -153,21 +156,26 @@ function Universe(isEntered){
 
     <div className='moon'></div>
 
-    {showShootingStar && (
-      <div className='shooting-star'><span>Make a wish <i className='wish-star'></i></span></div>
-    )}
+    <div className='shooting-star-hitbox'>
+      {showShootingStar && (
+      <div 
+        className='shooting-star' 
+        onClick={()=>setWishMade(true)}
+        onAnimationEnd={()=>setShowShootingStar(false)}
+        // When the CSS animation on this element finishes, run this function.
+        >
+        {/* <span>Make a wish <i className='wish-star'></i></span> */}
+      </div>
+      )
+      }
+    </div>
+
     {/* only create the shooting-star div if showShooting is true */}
 
-
-
-
-
-
-
-
+    
     <div className='moon-phases'>
-      {moonPhases.map((phase)=> (
-        <div className='moon-phase'>
+      {moonPhases.map((phase , index)=> (
+        <div className='moon-phase' key={index}>
           <div className={`phase-moon ${phase.moon}`}></div>
           <div className='phase-name'>{phase.name}</div>
           <div className='fact'>{phase.moonFacts[Math.floor(Math.random()*phase.moonFacts.length)]}</div>
