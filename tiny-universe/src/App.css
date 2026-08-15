@@ -524,3 +524,74 @@ body{
   top: 50%;
   transform: translateY(-50%);
 }
+
+
+.shooting-star {
+  position: absolute;
+  top: 20%;
+  z-index : 20;
+  left: 80%;
+
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
+
+  box-shadow: 0 0 8px white, 0 0 20px white;
+
+  animation: shooting 1.5s linear forwards;
+}
+
+.shooting-star span {
+  position: absolute;
+  top: -30px;
+  left: -40px;
+
+  white-space: nowrap;
+  color: white;
+  font-family: "Garamond";
+  font-size: 16px;
+
+  opacity: 0;
+  animation: wish-text 1.5s ease forwards;
+}
+
+@keyframes shooting {
+  from {
+    transform: translate(0, 0);
+  }
+
+  to {
+    transform: translate(-500px, 350px);
+  }
+}
+
+@keyframes wish-text {
+  0% {
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.wish-star{
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: white;
+  transform: rotate(45deg);
+  box-shadow:
+    0 0 5px white,
+    0 0 10px #8fd3ff,
+    0 0 18px #8fd3ff;
+}
