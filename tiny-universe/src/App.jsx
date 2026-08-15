@@ -17,7 +17,21 @@ function Landing({setIsEntered, setIsLeaving , isLeaving}){
 // State lives in the parent, but the child can change it through a function passed as a prop.
 // This is called lifting state up / passing callbacks, and you'll use it constantly in React.
 
-function Universe(isEntered){const[showShootingStar,setShowShootingStar]=useState(false);
+function Universe(isEntered){
+  const[showShootingStar,setShowShootingStar]=useState(false);
+
+  const[wishMade,setWishMade] = useState(false);
+
+  useEffect(()=>{
+    const timer = setTimeout(()=>{
+      setShowShootingStar(true);
+    } , 5000);
+
+    return () => clearTimeout(timer);
+    // setTimeout sets a timer in the browser, so by writing this we are cleaning up that.
+  } , []);
+
+
   const facts =[
     "The nearest star to Earth (other than the Sun) is Proxima Centauri, 4.24 light-years away." ,
     "The Sun makes up about 99.86% of the mass in our solar system." ,
@@ -139,7 +153,17 @@ function Universe(isEntered){const[showShootingStar,setShowShootingStar]=useStat
 
     <div className='moon'></div>
 
-    <div className='shooting-star'></div>
+    {showShootingStar && (
+      <div className='shooting-star'><span>Make a wish <i className='wish-star'></i></span></div>
+    )}
+    {/* only create the shooting-star div if showShooting is true */}
+
+
+
+
+
+
+
 
     <div className='moon-phases'>
       {moonPhases.map((phase)=> (
