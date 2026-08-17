@@ -1,8 +1,10 @@
+import cosmicSong from "./audio/cosmic-1.mp3"
+
 const songs = [
   {
     title: "Cosmic Study",
     artist: "The Mountain",
-    url: "https://www.youtube.com/watch?v=iYYRH4apXDo&list=RDiYYRH4apXDo&start_radio=1"
+    url: cosmicSong,
   },
   {
     title: "Universe",
