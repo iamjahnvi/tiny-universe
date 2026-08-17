@@ -17,7 +17,7 @@ function MusicPlayer() {
             audioRef.current.play();
             setIsPlaying(true);
         }
-    }
+    };
 
     return(
         <div className='musicPlayer'>
@@ -33,9 +33,12 @@ function MusicPlayer() {
                 {songs[currentSong].url};
             </div> */ }
             {/* audio files stay inside audio tag */}
-
+{/* 
             <button onClick={togglePlay}>
                 {isPlaying ? "Pause" : "Play"};
+            </button> */}
+
+            <button onClick={() => setIsPlaying(true)}>{isPlaying ? "Pause" : "Play"}
             </button>
 
             <audio ref={audioRef} src={songs[currentSong].url}></audio>
