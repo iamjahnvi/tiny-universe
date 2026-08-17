@@ -25,3 +25,13 @@ function cutie(){
         </>
     )
 }
+
+<div className="moon-phases">
+   {moonPhases.map((phase)=>{
+    <div className='moon-phase'>
+        <div>{phase.name}</div>
+        <div>{phase.moon}</div>
+        <div className='fact'>{phase.fact}</div>
+    </div>
+   })}
+</div>
