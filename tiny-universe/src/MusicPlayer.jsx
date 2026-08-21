@@ -3,7 +3,7 @@ import songs from './songs'
 
 function MusicPlayer() {
     const audioRef = useRef(null);
-    // why we put useRef as null?
+    // why we put useRef as null
     // because it says, currently i don;t hv the DOM element yet(<audio></audio>). Once React creates it,Put the ref here.
 
     const[currentSong,setCurrentSong] = useState(0);
