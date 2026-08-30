@@ -38,10 +38,14 @@ function MusicPlayer() {
                 {isPlaying ? "Pause" : "Play"};
             </button> */}
 
-            <button onClick={() => setIsPlaying(true)}>{isPlaying ? "Pause" : "Play"}
+            <button onClick={() => togglePlay}>{isPlaying ? "Pause" : "Play"}
             </button>
 
-            <audio ref={audioRef} src={songs[currentSong].url}></audio>
+            <audio 
+                ref={audioRef} 
+                src={songs[currentSong].url}
+                controls>
+            </audio>
 
             {/* by writing this , think of that as
             React , put an audio player here , but we should be able to tell that specific auio element to :-
