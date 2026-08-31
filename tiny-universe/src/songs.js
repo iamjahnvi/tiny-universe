@@ -1,4 +1,4 @@
-import cosmicSong from "./audio/cosmic-1.mp3"
+import cosmicSong from "/audio/cosmic-1.mp3"
 
 const songs = [
   {
