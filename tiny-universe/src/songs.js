@@ -1,20 +1,21 @@
-import cosmicSong from "/audio/cosmic-1.mp3"
-
+// Local tracks only. Files live in public/audio/ so Vite serves them at /audio/...,
+// both in dev and in the production build. Replace these mp3s with your own
+// royalty-free ambient tracks — just keep the filenames or update them here.
 const songs = [
   {
-    title: "Cosmic Study",
-    artist: "The Mountain",
-    url: cosmicSong,
+    title: "Drifting Light",
+    artist: "Tiny Universe Ensemble",
+    url: "/audio/cosmic-1.mp3",
   },
   {
-    title: "Universe",
-    artist: "AlexGrohi",
-    url: "https://www.youtube.com/watch?v=DtVBCG6ThDk&list=RDDtVBCG6ThDk&start_radio=1"
+    title: "Night Orbit",
+    artist: "Tiny Universe Ensemble",
+    url: "/audio/cosmic-2.mp3",
   },
   {
-    title: "Silent Universe",
-    artist: "Universfield",
-    url: "https://www.youtube.com/watch?v=2EIeUlvHAiM&list=RD2EIeUlvHAiM&start_radio=1"
+    title: "Soft Gravity",
+    artist: "Tiny Universe Ensemble",
+    url: "/audio/cosmic-3.mp3",
   },
 ];
 
