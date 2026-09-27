@@ -1,26 +1,32 @@
 import { DENSITY_OPTIONS } from "../data/cosmos";
 
-// Whimsical density control: "how crowded should your little universe be?"
-// Three glowing glyphs instead of a settings slider.
+// Near-invisible field control: how present the distant field should be.
+// Three quiet words, bottom-left, dim until approached.
 function DensityControl({ value, onChange }) {
   return (
-    <div className="density" role="group" aria-label="How crowded should your little universe be?">
-      <p className="density-caption">how crowded should your sky be?</p>
+    <div
+      className="density"
+      role="group"
+      aria-label="Density of the distant star field"
+    >
       <div className="density-row">
-        {DENSITY_OPTIONS.map((opt) => (
-          <button
-            key={opt.key}
-            type="button"
-            className={`density-btn ${value === opt.key ? "active" : ""}`}
-            aria-pressed={value === opt.key}
-            aria-label={`${opt.label}, ${opt.count} stars`}
-            onClick={() => onChange(opt.key)}
-          >
-            <span className="density-glyph" aria-hidden="true">
-              {opt.glyph}
-            </span>
-            <span className="density-name">{opt.label}</span>
-          </button>
+        {DENSITY_OPTIONS.map((opt, i) => (
+          <span key={opt.key} className="density-item">
+            <button
+              type="button"
+              className={`density-btn ${value === opt.key ? "active" : ""}`}
+              aria-pressed={value === opt.key}
+              aria-label={`${opt.label}, ${opt.count} stars`}
+              onClick={() => onChange(opt.key)}
+            >
+              {opt.label}
+            </button>
+            {i < DENSITY_OPTIONS.length - 1 && (
+              <span className="density-sep" aria-hidden="true">
+                /
+              </span>
+            )}
+          </span>
         ))}
       </div>
     </div>

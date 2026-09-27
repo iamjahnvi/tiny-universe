@@ -108,8 +108,8 @@ function MusicPlayer() {
         )}
       </div>
       <div className="radio-controls">
-        <button type="button" aria-label="Previous song" onClick={() => step(-1)}>
-          ⏮
+        <button type="button" aria-label="Previous track" onClick={() => step(-1)}>
+          ‹‹
         </button>
         <button
           type="button"
@@ -117,14 +117,14 @@ function MusicPlayer() {
           aria-label={isPlaying ? "Pause" : "Play"}
           onClick={toggle}
         >
-          {isPlaying ? "❚❚" : "▶"}
+          {isPlaying ? "‖" : "›"}
         </button>
-        <button type="button" aria-label="Next song" onClick={() => step(1)}>
-          ⏭
+        <button type="button" aria-label="Next track" onClick={() => step(1)}>
+          ››
         </button>
       </div>
       <label className="radio-volume">
-        <span aria-hidden="true">♪</span>
+        <span aria-hidden="true">vol</span>
         <input
           type="range"
           min="0"

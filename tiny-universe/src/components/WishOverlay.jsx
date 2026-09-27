@@ -1,28 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 
-// Intimate wish dialog. Nothing leaves the browser — the wish lives
-// only in this session, then fades like a new star.
+// A quiet exchange. Nothing leaves the browser — the words dissolve here,
+// the field answers faintly, and a single point of light travels away.
 function WishOverlay({ open, onClose }) {
   const [text, setText] = useState("");
-  const [sent, setSent] = useState(false);
+  const [stage, setStage] = useState("writing"); // writing | releasing | gone
   const inputRef = useRef(null);
-  const timer = useRef(null);
+  const timer = useRef([]);
 
   useEffect(() => {
     if (!open) return;
-    const t = setTimeout(() => inputRef.current?.focus(), 350);
+    const t = setTimeout(() => inputRef.current?.focus(), 600);
     return () => clearTimeout(t);
   }, [open ]);
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => timer.current.forEach(clearTimeout), []);
 
   const close = () => {
     onClose();
-    // Reset for the next wish after the veil fades.
     setTimeout(() => {
       setText("");
-      setSent(false);
-    }, 300);
+      setStage("writing");
+    }, 600);
   };
 
   useEffect(() => {
@@ -36,28 +35,29 @@ function WishOverlay({ open, onClose }) {
 
   if (!open) return null;
 
-  const send = (e) => {
+  const release = (e) => {
     e.preventDefault();
-    if (!text.trim()) return;
-    setSent(true);
-    timer.current = setTimeout(close, 3600);
+    if (!text.trim() || stage !== "writing") return;
+    setStage("releasing");
+    timer.current.push(setTimeout(() => setStage("gone"), 2200));
+    timer.current.push(setTimeout(close, 5200));
   };
 
   return (
     <div className="wish-veil" onClick={close} role="presentation">
       <div
-        className="wish-box"
+        className="wish-field"
         role="dialog"
         aria-modal="true"
-        aria-label="Make a wish"
+        aria-label="Leave something with the universe"
         onClick={(e) => e.stopPropagation()}
       >
-        {!sent ? (
-          <form onSubmit={send}>
-            <p className="wish-kicker">a shooting star heard you</p>
-            <h2 className="wish-title">Make a wish ✨</h2>
+        {stage === "writing" && (
+          <form onSubmit={release} className="wish-form">
+            <p className="wish-kicker">something crossed the dark</p>
+            <h2 className="wish-title">Leave something with the universe.</h2>
             <label className="wish-label" htmlFor="wish-input">
-              What do you wish for?
+              Tell it something. No one else will see it.
             </label>
             <input
               id="wish-input"
@@ -65,27 +65,29 @@ function WishOverlay({ open, onClose }) {
               className="wish-input"
               type="text"
               maxLength={120}
-              placeholder="write it into the universe…"
+              placeholder=""
               value={text}
               onChange={(e) => setText(e.target.value)}
               autoComplete="off"
             />
-            <div className="wish-actions">
-              <button type="submit" className="wish-send" disabled={!text.trim()}>
-                Send it to the stars
-              </button>
-              <button type="button" className="wish-close" onClick={close}>
-                not now
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="wish-release"
+              disabled={!text.trim()}
+            >
+              Release it
+            </button>
           </form>
-        ) : (
-          <div className="wish-sent">
-            <span className="wish-star" aria-hidden="true">
-              ✦
-            </span>
-            <h2 className="wish-title">Your wish has been sent into the universe ✨</h2>
-            <p className="wish-quiet">it now glimmers somewhere above you</p>
+        )}
+        {stage === "releasing" && (
+          <div className="wish-dissolve" aria-hidden="true">
+            <p className="dissolve-text">{text}</p>
+          </div>
+        )}
+        {stage === "gone" && (
+          <div className="wish-gone">
+            <span className="departing" aria-hidden="true" />
+            <p>It is with the universe now.</p>
           </div>
         )}
       </div>

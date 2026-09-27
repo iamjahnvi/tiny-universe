@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-// Playful constellation flow. Selection lives in App so StarField can draw
-// the lines; this bar handles mode toggle, naming, and reset.
+// Mapping an unknown region. Selection lives in App so StarField can draw
+// the hairlines; this strip handles the quiet charting language.
 function ConstellationBar({
   mode,
   onToggle,
@@ -21,54 +21,55 @@ function ConstellationBar({
   };
 
   return (
-    <div className="constellation-bar">
+    <div className="chart-strip">
       <button
         type="button"
-        className={`connect-btn ${mode ? "active" : ""}`}
+        className={`chart-toggle ${mode ? "active" : ""}`}
         aria-pressed={mode}
         onClick={onToggle}
       >
-        {mode ? "✦ connecting… tap stars" : "✦ connect the stars"}
+        {mode ? "charting — select points of light" : "chart formations"}
       </button>
 
       {mode && selectedCount > 0 && !savedName && (
-        <span className="connect-count" role="status">
-          {selectedCount} {selectedCount === 1 ? "star" : "stars"} joined
+        <span className="chart-count" role="status">
+          {selectedCount} {selectedCount === 1 ? "point" : "points"} marked
         </span>
       )}
 
       {mode && selectedCount >= 2 && !savedName && (
-        <form className="connect-form" onSubmit={save}>
-          <label htmlFor="constellation-name">What should we call it?</label>
-          <div className="connect-input-row">
+        <form className="chart-form" onSubmit={save}>
+          <span className="chart-unnamed">Unnamed formation.</span>
+          <div className="chart-input-row">
             <input
               id="constellation-name"
               type="text"
               maxLength={40}
-              placeholder="name your constellation…"
+              placeholder="give it a name"
+              aria-label="Name this formation"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               autoComplete="off"
             />
             <button type="submit" disabled={!draft.trim()}>
-              name it
+              record
             </button>
           </div>
         </form>
       )}
 
       {savedName && (
-        <p className="connect-saved" role="status">
-          Your constellation: <strong>{savedName}</strong>
-          <button type="button" onClick={onReset} className="connect-reset">
-            release it
+        <p className="chart-saved" role="status">
+          {savedName}
+          <button type="button" onClick={onReset} className="chart-reset">
+            release
           </button>
         </p>
       )}
 
       {mode && selectedCount > 0 && !savedName && (
-        <button type="button" onClick={onReset} className="connect-reset">
-          start over
+        <button type="button" onClick={onReset} className="chart-reset">
+          clear marks
         </button>
       )}
     </div>

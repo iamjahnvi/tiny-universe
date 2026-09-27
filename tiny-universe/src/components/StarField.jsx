@@ -2,12 +2,14 @@ import { useMemo } from "react";
 
 // A stable star field. Positions + facts are generated once per density
 // (useMemo), so re-renders never reshuffle the sky.
+// Stars render as bare points of light — interactive ones are
+// indistinguishable until discovered.
 function StarField({ stars, selectedIds, constellationMode, onStarClick }) {
   const layers = useMemo(() => stars, [stars]);
 
   return (
     <>
-      {/* Constellation lines: SVG in % coordinates so lines follow stars on resize */}
+      {/* Chart lines: SVG in % coordinates so lines follow stars on resize */}
       {selectedIds.length > 1 && (
         <svg
           className="constellation-lines"
@@ -27,7 +29,7 @@ function StarField({ stars, selectedIds, constellationMode, onStarClick }) {
             const s = layers.find((star) => star.id === id);
             if (!s) return null;
             return (
-              <circle key={id} cx={s.x} cy={s.y} r="0.7" className="node" />
+              <circle key={id} cx={s.x} cy={s.y} r="0.45" className="node" />
             );
           })}
         </svg>
@@ -35,7 +37,7 @@ function StarField({ stars, selectedIds, constellationMode, onStarClick }) {
 
       {layers.map((star) => {
         const isSelected = selectedIds.includes(star.id);
-        // Keep tooltips on-screen: flip side near edges, drop below near the top.
+        // Keep discoveries on-screen: flip side near edges, drop below near the top.
         const flipSide = star.x > 68 ? "flip-side" : "";
         const dropBelow = star.y < 22 ? "drop-below" : "";
         return (
@@ -45,28 +47,25 @@ function StarField({ stars, selectedIds, constellationMode, onStarClick }) {
             className={
               "star" +
               (isSelected ? " selected" : "") +
-              (constellationMode ? " connectable" : "")
+              (constellationMode ? " charting" : "")
             }
             style={{
               left: `${star.x}%`,
               top: `${star.y}%`,
               "--size": `${star.size}px`,
-              "--glow": star.glow,
               "--tw": `${star.twinkle}s`,
               "--delay": `${star.delay}s`,
               "--op": star.opacity,
             }}
             aria-label={
               constellationMode
-                ? `Select star for constellation. Fact: ${star.fact}`
+                ? `Chart this star. Fact: ${star.fact}`
                 : `Star. Fact: ${star.fact}`
             }
             aria-pressed={constellationMode ? isSelected : undefined}
             onClick={() => onStarClick(star)}
           >
-            <span className="star-dot" aria-hidden="true">
-              ✦
-            </span>
+            <span className="star-dot" aria-hidden="true" />
             {!constellationMode && (
               <span
                 className={`star-fact ${flipSide} ${dropBelow}`}

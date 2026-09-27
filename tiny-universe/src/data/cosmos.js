@@ -60,7 +60,7 @@ export const MOON_PHASES = [
 ];
 
 export const DENSITY_OPTIONS = [
-  { key: "sparse", label: "a few", count: 45, glyph: "\u2727" },
-  { key: "cozy", label: "cozy", count: 95, glyph: "\u2727\u2727" },
-  { key: "crowded", label: "skyful", count: 150, glyph: "\u2727\u2727\u2727" },
+  { key: "sparse", label: "sparse", count: 70 },
+  { key: "moderate", label: "moderate", count: 140 },
+  { key: "crowded", label: "dense", count: 220 },
 ];

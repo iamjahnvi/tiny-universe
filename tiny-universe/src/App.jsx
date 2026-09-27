@@ -9,7 +9,7 @@ import DensityControl from "./components/DensityControl";
 import ConstellationBar from "./components/ConstellationBar";
 import { STAR_FACTS, DENSITY_OPTIONS } from "./data/cosmos";
 
-// Deterministic pseudo-random so the sky is stable between renders.
+// Deterministic pseudo-random so the field is stable between renders.
 function mulberry32(seed) {
   return function () {
     seed |= 0;
@@ -20,24 +20,23 @@ function mulberry32(seed) {
   };
 }
 
+const MAX_STARS = 220;
+
 function Landing({ onEnter, isLeaving }) {
   return (
     <div className={isLeaving ? "landing leaving" : "landing"}>
-      <p className="landing-kicker">WELCOME TO</p>
+      <p className="landing-kicker">Welcome to</p>
       <h1 className="landing-title">Tiny Universe</h1>
-      <h2 className="landing-sub">a little place for people who look up</h2>
+      <p className="landing-sub">a little place for people who look up</p>
       <button type="button" className="enter-btn" onClick={onEnter}>
-        Enter Universe
+        Enter
       </button>
-      <p className="landing-hint" aria-hidden="true">
-        ✦ &nbsp;take your time&nbsp; ✦
-      </p>
     </div>
   );
 }
 
 function Universe() {
-  const [density, setDensity] = useState("cozy");
+  const [density, setDensity] = useState("moderate");
   const [flight, setFlight] = useState(null);
   const [wishOpen, setWishOpen] = useState(false);
   const [constellationMode, setConstellationMode] = useState(false);
@@ -46,28 +45,36 @@ function Universe() {
   const flightKey = useRef(0);
 
   const starCount =
-    DENSITY_OPTIONS.find((o) => o.key === density)?.count ?? 95;
+    DENSITY_OPTIONS.find((o) => o.key === density)?.count ?? 140;
 
-  // Generated once — stable positions, sizes, twinkle, and facts forever.
+  // Generated once — stable positions, depths, rhythms, and facts.
+  // Squared distribution: a vast bed of barely-visible distant points,
+  // a middle field, and a few brighter stars worth investigating.
   const allStars = useMemo(() => {
     const rand = mulberry32(20260927);
-    return Array.from({ length: 150 }, (_, i) => {
+    return Array.from({ length: MAX_STARS }, (_, i) => {
       let x = rand() * 100;
       let y = rand() * 100;
-      // Keep the gravitational center breathing: nudge stars out of the core.
-      if (Math.abs(x - 50) < 15 && Math.abs(y - 48) < 17) {
+      // Keep the gravitational center breathing: nudge points out of the core.
+      if (Math.abs(x - 50) < 14 && Math.abs(y - 48) < 16) {
         x = (x + 34) % 100;
         y = (y + 30) % 100;
       }
+      const depth = rand();
+      const size =
+        depth < 0.62
+          ? 1 + rand() * 1 // distant dust
+          : depth < 0.9
+            ? 1.5 + rand() * 1.2 // middle field
+            : 2.4 + rand() * 1.6; // rare brighter stars
       return {
         id: i,
         x: Math.round(x * 10) / 10,
         y: Math.round(y * 10) / 10,
-        size: Math.round((10 + rand() * 10) * 10) / 10,
-        opacity: Math.round((0.45 + rand() * 0.55) * 100) / 100,
-        glow: `${Math.round(4 + rand() * 10)}px`,
-        twinkle: Math.round((1.8 + rand() * 2.7) * 10) / 10,
-        delay: Math.round(rand() * 40) / 10,
+        size: Math.round(size * 10) / 10,
+        opacity: Math.round((0.22 + rand() * 0.73) * 100) / 100,
+        twinkle: Math.round((3 + rand() * 4.5) * 10) / 10,
+        delay: Math.round(rand() * 70) / 10,
         fact: STAR_FACTS[Math.floor(rand() * STAR_FACTS.length)],
       };
     });
@@ -75,18 +82,20 @@ function Universe() {
 
   const stars = useMemo(() => allStars.slice(0, starCount), [allStars, starCount]);
 
-  // Shooting-star loop: one crossing at a time, roughly every 5 seconds.
-  // Single timeout chain — no overlapping intervals.
+  // Rare crossings: a single event every 9–17 seconds, each with its own
+  // altitude, duration, and descent. Missing one should feel normal.
   useEffect(() => {
     if (flight) return;
     if (wishOpen) return;
-    const wait = 3600 + Math.random() * 2600;
+    const wait = 9000 + Math.random() * 8000;
     const t = setTimeout(() => {
       flightKey.current += 1;
       setFlight({
         key: flightKey.current,
-        startTop: 6 + Math.random() * 26,
-        duration: 1.8 + Math.random() * 1.1,
+        startTop: 5 + Math.random() * 30,
+        duration: 2.2 + Math.random() * 1.2,
+        drop: 34 + Math.random() * 26,
+        delay: 0,
       });
     }, wait);
     return () => clearTimeout(t);
@@ -113,9 +122,6 @@ function Universe() {
 
       <div className="universe-core">
         <MoonSystem />
-        <p className="catch-hint" aria-hidden="true">
-          psst — catch a shooting star to make a wish
-        </p>
         <ConstellationBar
           mode={constellationMode}
           onToggle={() => {
@@ -132,6 +138,10 @@ function Universe() {
           }}
         />
       </div>
+
+      <p className="orientation" aria-hidden="true">
+        drift slowly — some points of light answer
+      </p>
 
       {flight && (
         <ShootingStar
@@ -158,7 +168,7 @@ function App() {
 
   const enter = () => {
     setIsLeaving(true);
-    leaveTimer.current = setTimeout(() => setIsEntered(true), 950);
+    leaveTimer.current = setTimeout(() => setIsEntered(true), 1400);
   };
 
   return isEntered ? <Universe /> : <Landing onEnter={enter} isLeaving={isLeaving} />;
