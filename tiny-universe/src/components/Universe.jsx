@@ -204,7 +204,7 @@ export default function Universe() {
           <section
             key={ch.id}
             data-chapter={i}
-            className={`ch ${i % 2 === 0 ? "left" : "right"} ${active === i ? "lit" : ""}`}
+            className={`ch left ${active === i ? "lit" : ""}`}
             style={{ height: `${SCROLL.chapterVh}vh` }}
             aria-label={`Region ${ch.id}: ${ch.name}, ${ch.object}`}
           >

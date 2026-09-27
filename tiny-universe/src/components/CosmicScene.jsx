@@ -208,7 +208,7 @@ export default function CosmicScene({
         const x = (s.x + mxS * 0.02 * f) * W;
         const y = yy * H + myS * 14 * f;
         const len = Math.min(stretch * f, 26);
-        const c = mix3(s.c, wash, 0.35);
+        const c = mix3(s.c, wash, 0.42);
         ctx.globalAlpha = s.a;
         ctx.fillStyle = rgb(c, 1);
         if (len > 1.5) ctx.fillRect(x, y - len / 2, s.r * 0.8, len);
@@ -231,7 +231,7 @@ export default function CosmicScene({
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const raw = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
 
-      pS += (raw - pS) * (L.reducedMotion ? 1 : 0.065);
+      pS += (raw - pS) * (L.reducedMotion ? 1 : 0.045);
       mxS += ((L.reducedMotion ? 0 : mouseX) - mxS) * (L.reducedMotion ? 1 : 0.045);
       myS += ((L.reducedMotion ? 0 : mouseY) - myS) * (L.reducedMotion ? 1 : 0.045);
       const instVel = Math.abs(raw - prevRaw);
@@ -257,7 +257,7 @@ export default function CosmicScene({
         const by = b.y * H + myS * 6;
         const br = b.r * base * 1.4;
         const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-        g.addColorStop(0, rgb(zone.fog, 0.1));
+        g.addColorStop(0, rgb(zone.fog, 0.13));
         g.addColorStop(1, rgb(zone.fog, 0));
         ctx.fillStyle = g;
         ctx.fillRect(bx - br, by - br, br * 2, br * 2);
@@ -272,7 +272,6 @@ export default function CosmicScene({
 
       drawStarLayer(data.bg, 0.25, flow, stretch, zone.wash);
       drawStarLayer(data.mid, 0.55, flow, stretch, zone.wash);
-
       // Foreground points (chartable) + hit-test map.
       fgScreen.current = [];
       for (let i = 0; i < data.fg.length; i++) {
@@ -282,7 +281,7 @@ export default function CosmicScene({
         const y = yy * H + myS * 14 * 0.85;
         fgScreen.current.push({ id: s.id, x, y });
         const marked = L.marks.includes(s.id);
-        const c = mix3(s.c, zone.wash, 0.3);
+        const c = mix3(s.c, zone.wash, 0.4);
         ctx.globalAlpha = marked ? 1 : s.a;
         ctx.fillStyle = marked ? "#f2f5fc" : rgb(c, 1);
         const r = marked ? s.r + 1.2 : s.r;
@@ -317,8 +316,8 @@ export default function CosmicScene({
         return Math.max(0, 1 - Math.abs(p - c) / INFLUENCE);
       });
       const maxEnv = Math.max(...envs, 0);
-      const threadA = 0.2 + 0.55 * (1 - maxEnv);
-      const rot = (L.reducedMotion ? 0 : t * 0.035) + p * 10;
+      const threadA = 0.25 + 0.6 * (1 - maxEnv);
+      const rot = (L.reducedMotion ? 0 : t * 0.03) + p * 10;
       const tcx = W * 0.5 + mxS * 12;
       const tcy = H * 0.52 + myS * 9;
       const threadC = mix3([190, 200, 228], zone.wash, 0.55);
@@ -332,38 +331,48 @@ export default function CosmicScene({
       }
       ctx.globalAlpha = 1;
 
-      // Hubble plates: distant → enormous → receding.
+      // Hubble plates: distant → FULL-BLEED dominance → receding.
+      // Alpha holds at full through the middle of each galaxy's reign,
+      // dissolving only at the handoff to the next region.
       plateRects.current = [];
       ctx.globalCompositeOperation = "lighter";
       CHAPTERS.forEach((ch, i) => {
-        const e = envs[i];
+        const dd = (p - GEO.centerOf(i)) / INFLUENCE;
+        const ad = Math.abs(dd);
+        const fade = smooth(Math.min(1, Math.max(0, (ad - 0.45) / 0.55)));
+        const e = Math.max(0, 1 - fade);
         if (e > 0.02) ensurePlate(i);
         if (e <= 0.02) return;
         const rec = plates.current[i];
-        const a = Math.pow(e, 1.25);
+        const a = Math.pow(e, 1.1);
         const local = clamp01((p - (GEO.centerOf(i) - INFLUENCE)) / (INFLUENCE * 2));
+        const ease = local * local * (3 - 2 * local); // creamy growth
         const dir = i % 2 === 0 ? 1 : -1;
-        const gx = W * 0.5 + dir * (0.5 - local) * W * 0.12 + mxS * 22;
-        const gy = H * (0.46 + (0.5 - local) * 0.62) + myS * 16;
+        const gx = W * 0.5 + dir * (0.5 - local) * W * 0.1 + mxS * 22;
+        const gy = H * (0.46 + (0.5 - local) * 0.55) + myS * 16;
         const isHot = hovered.current === ch.slug;
 
-        coreGlow(gx, gy, base * 0.55, `${ch.accent[0]},${ch.accent[1]},${ch.accent[2]}`, 0.1 * a);
-        coreGlow(gx, gy, base * 0.9, `${zone.fog[0]},${zone.fog[1]},${zone.fog[2]}`, 0.08 * a);
+        coreGlow(gx, gy, base * 0.6, `${ch.accent[0]},${ch.accent[1]},${ch.accent[2]}`, 0.15 * a);
+        coreGlow(gx, gy, base * 1.0, `${zone.fog[0]},${zone.fog[1]},${zone.fog[2]}`, 0.1 * a);
 
         if (rec && rec.loaded && rec.img) {
-          let h = Math.min(H * 1.05, base * (0.34 + local * 1.35));
-          if (isHot) h *= 1.06;
-          let w = h * rec.aspect;
-          if (w > W * 1.35) {
-            w = W * 1.35;
-            h = w / rec.aspect;
+          // Cover the viewport: plates bleed off every edge at dominance.
+          let tw = W * (0.32 + ease * 0.9);
+          let th = H * (0.45 + ease * 0.85);
+          if (isHot) {
+            tw *= 1.04;
+            th *= 1.04;
           }
-          plateRects.current.push({ slug: ch.slug, cx: gx, cy: gy, w, h, e });
+          const rot = dir * (local - 0.5) * 0.03;
+          const over = 1 + Math.abs(rot) * 2; // overscan so rotation never reveals edges
+          tw *= over;
+          th *= over;
+          plateRects.current.push({ slug: ch.slug, cx: gx, cy: gy, w: tw, h: th, e });
           ctx.save();
-          ctx.globalAlpha = Math.min(1, a * (isHot ? 1 : 0.96));
+          ctx.globalAlpha = Math.min(1, a);
           ctx.translate(gx, gy);
-          ctx.rotate(dir * (local - 0.5) * 0.05);
-          const far = 1 - Math.min(1, e / 0.45);
+          ctx.rotate(rot);
+          const far = Math.min(1, Math.max(0, 1 - a * 1.7));
           try {
             ctx.filter =
               far > 0.03
@@ -374,11 +383,15 @@ export default function CosmicScene({
           } catch {
             /* older engines ignore filter */
           }
-          ctx.drawImage(rec.img, -w / 2, -h / 2, w, h);
+          const iw = rec.img.naturalWidth;
+          const ih = rec.img.naturalHeight;
+          const scale = Math.max(tw / iw, th / ih);
+          const dw = iw * scale;
+          const dh = ih * scale;
+          ctx.drawImage(rec.img, -dw / 2, -dh / 2, dw, dh);
           ctx.restore();
           ctx.filter = "none";
         } else {
-          // Unloaded plates still bend light: a tinted phantom core.
           coreGlow(gx, gy, base * (0.2 + local * 0.3), `${ch.accent[0]},${ch.accent[1]},${ch.accent[2]}`, 0.16 * a);
         }
       });

@@ -4,7 +4,7 @@
 
 export const SCROLL = {
   introVh: 100,
-  chapterVh: 130,
+  chapterVh: 230, // long dwell: approach → dominate → recede per galaxy
   outroVh: 140,
 };
 
