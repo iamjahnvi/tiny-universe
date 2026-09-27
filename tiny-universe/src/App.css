@@ -87,6 +87,22 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.veil-line {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.45em;
+  text-indent: 0.45em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  animation: veil-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes veil-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* ---------- HUD: instrument corners ---------- */
 
 .hud-top {
@@ -108,6 +124,50 @@ body {
   letter-spacing: 0.42em;
   text-transform: uppercase;
   color: var(--ink-faint);
+}
+
+.hud-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  pointer-events: auto;
+}
+
+.snd {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+  cursor: pointer;
+  padding: 6px 2px;
+  transition: color 0.5s ease;
+}
+
+.snd:hover {
+  color: var(--ink-dim);
+}
+
+.snd-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+}
+
+.snd.on {
+  color: var(--ink-dim);
+}
+
+.snd.on .snd-dot {
+  background: #eef1f8;
+  border-color: #eef1f8;
+  box-shadow: 0 0 8px rgba(238, 241, 248, 0.7);
 }
 
 .hud-pos {
@@ -303,6 +363,52 @@ body {
   color: var(--ink-ghost);
 }
 
+/* descend: part of the environment, not a button */
+.descend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.descend span {
+  font-size: 9px;
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+}
+
+.descend i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-right: 1px solid var(--ink-faint);
+  border-bottom: 1px solid var(--ink-faint);
+  transform: rotate(45deg);
+  animation: descend-drop 2.4s ease-in-out infinite;
+}
+
+.descend i:nth-child(3) {
+  animation-delay: 0.25s;
+}
+
+.descend i:nth-child(4) {
+  animation-delay: 0.5s;
+}
+
+@keyframes descend-drop {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: rotate(45deg) translate(0, 0);
+  }
+  50% {
+    opacity: 0.85;
+    transform: rotate(45deg) translate(2px, 2px);
+  }
+}
+
 /* chapter labels: archive entries, alternating sides, lit on approach */
 .ch {
   display: flex;
@@ -359,154 +465,212 @@ body {
   color: var(--ink-faint);
 }
 
-/* ---------- Music: a corner instrument, not a card ---------- */
+/* ---------- Discovery label: a whisper above the bottom edge ---------- */
 
-.radio {
+.discover {
   position: fixed;
-  right: 24px;
-  bottom: 56px;
-  z-index: 20;
-  width: 200px;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 7px 10px;
-  align-items: center;
-  padding: 0;
+  left: 50%;
+  bottom: 66px;
+  transform: translateX(-50%);
+  z-index: 21;
   background: none;
   border: none;
-  opacity: 0.45;
-  transition: opacity 0.7s ease;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  cursor: pointer;
+  padding: 8px 12px;
+  white-space: nowrap;
+  animation: discover-in 0.8s ease both;
 }
 
-.radio:hover,
-.radio:focus-within {
-  opacity: 1;
-}
-
-.radio-orb {
-  width: 8px;
-  height: 8px;
-  grid-row: span 2;
-  justify-self: center;
-}
-
-.orb-ring {
-  display: block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(215, 219, 228, 0.35);
-}
-
-.orb-ring.spinning {
-  background: rgba(235, 238, 246, 0.95);
-  box-shadow: 0 0 8px rgba(235, 238, 246, 0.55);
-  animation: pulse-dot 3s ease-in-out infinite alternate;
-}
-
-@keyframes pulse-dot {
+@keyframes discover-in {
   from {
-    opacity: 0.45;
+    opacity: 0;
   }
   to {
     opacity: 1;
   }
 }
 
-.radio-meta {
-  min-width: 0;
-}
-
-.radio-title {
-  margin: 0;
+.discover-num {
   font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.radio-artist {
-  margin: 3px 0 5px;
-  font-size: 11px;
-  font-style: italic;
+  letter-spacing: 0.3em;
   color: var(--ink-ghost);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.radio-progress-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.radio-time {
-  font-size: 9px;
-  color: var(--ink-ghost);
-  min-width: 24px;
   font-variant-numeric: tabular-nums;
 }
 
-.radio-seek {
-  flex: 1;
-  min-width: 0;
-  accent-color: #8d96ab;
-  height: 10px;
-  cursor: pointer;
-}
-
-.radio-notice {
-  margin: 3px 0 0;
-  font-size: 10.5px;
-  font-style: italic;
-  color: var(--ink-faint);
-}
-
-.radio-controls {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: 2px;
-}
-
-.radio-controls button {
-  background: none;
-  border: none;
-  color: var(--ink-ghost);
-  font-family: var(--sans);
-  font-size: 13px;
-  cursor: pointer;
-  padding: 3px 8px;
-  transition: color 0.4s ease;
-}
-
-.radio-controls button:hover {
-  color: var(--ink);
-}
-
-.radio-controls .radio-play {
+.discover-name {
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
   color: var(--ink-dim);
 }
 
-.radio-volume {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 8.5px;
-  letter-spacing: 0.25em;
+.discover-go {
+  font-size: 10px;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--ink-ghost);
+  color: var(--ink-faint);
 }
 
-.radio-volume input {
-  flex: 1;
-  accent-color: #8d96ab;
-  height: 10px;
+/* ---------- Detail: the galaxy swallows the screen (SPA, no reload) ---------- */
+
+.detail {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  background: #010206;
+  animation: detail-in 1s ease both;
+}
+
+@keyframes detail-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.detail-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: detail-img 2.2s ease both;
+}
+
+@keyframes detail-img {
+  from {
+    transform: scale(1.07);
+    filter: brightness(0.7);
+  }
+  to {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.detail-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(1, 2, 6, 0.9) 0%,
+    rgba(1, 2, 6, 0.28) 55%,
+    rgba(1, 2, 6, 0.5) 100%
+  );
+}
+
+.detail-back {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  z-index: 2;
+  background: none;
+  border: none;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
   cursor: pointer;
+  padding: 8px 4px;
+}
+
+.detail-back:hover {
+  color: #fff;
+}
+
+.detail-body {
+  position: relative;
+  z-index: 1;
+  padding: 0 8vw 8vh;
+  max-width: 620px;
+  animation: detail-rise 1.2s ease both;
+}
+
+@keyframes detail-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.detail-num {
+  margin: 0 0 12px;
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  color: var(--ink-ghost);
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-name {
+  margin: 0 0 8px;
+  font-size: clamp(26px, 4.6vw, 44px);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #eef1f8;
+}
+
+.detail-object {
+  margin: 0 0 18px;
+  font-size: 13px;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+
+.detail-desc {
+  margin: 0 0 26px;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--ink-dim);
+  max-width: 46ch;
+}
+
+.detail-data {
+  margin: 0 0 20px;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 16px 36px;
+  justify-content: start;
+}
+
+.detail-data div {
+  margin: 0;
+}
+
+.detail-data dt {
+  font-size: 8.5px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+  margin-bottom: 6px;
+}
+
+.detail-data dd {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.detail-source {
+  margin: 0;
+  font-size: 10px;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  color: var(--ink-ghost);
 }
 
 /* ---------- Utilities ---------- */
@@ -542,14 +706,18 @@ body {
     max-width: 230px;
   }
 
-  .radio {
-    width: 150px;
-    right: 16px;
-    bottom: 60px;
+  .detail-data {
+    grid-template-columns: repeat(2, auto);
+    gap: 14px 28px;
   }
 
-  .radio-volume {
-    display: none;
+  .detail-body {
+    padding: 0 7vw 7vh;
+  }
+
+  .discover {
+    bottom: 108px;
+    max-width: 92vw;
   }
 
   .hud-bottom {

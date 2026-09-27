@@ -11,6 +11,7 @@ export default function UniverseHUD({
   formationName,
   onRecord,
   onRelease,
+  sound,
 }) {
   const barRef = useRef(null);
   const draftRef = useRef(null);
@@ -35,7 +36,9 @@ export default function UniverseHUD({
     <>
       <header className="hud-top">
         <p className="hud-brand">Tiny Universe</p>
-        <p className="hud-pos" aria-live="off">
+        <div className="hud-right">
+          {sound}
+          <p className="hud-pos" aria-live="off">
           {label ? (
             <>
               <span className="hud-num">{label.id}</span>
@@ -51,6 +54,7 @@ export default function UniverseHUD({
             </>
           )}
         </p>
+        </div>
       </header>
 
       <div className="hud-bottom">

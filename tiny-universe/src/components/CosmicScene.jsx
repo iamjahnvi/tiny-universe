@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
 import { CHAPTERS, scrollGeometry } from "../data/galaxies";
 
-// The full universe in one canvas. Scroll drives a virtual camera (progress
-// 0 → 1); the mouse adds faint parallax. Everything animated lives in refs
-// so React never re-renders per frame — state only changes on discrete
-// events (wish recorded, chart marks).
+// The universe in one canvas. Scroll drives a lerped camera; zones grade
+// the atmosphere; Hubble plates approach, dominate, and recede as spatial
+// destinations. React only hears about discrete events (hover/open/wish).
 
 function mulberry32(seed) {
   return function () {
@@ -23,31 +22,65 @@ const TINTS = [
   [190, 205, 240],
 ];
 
-function pickTint(rand) {
-  return TINTS[Math.floor(rand() * TINTS.length)];
-}
-
 const GEO = scrollGeometry();
-const INFLUENCE = 0.1; // progress half-width of each environment
+const INFLUENCE = 0.16; // wide envelopes so regions bleed into each other
+
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const mix3 = (a, b, t) => [
+  Math.round(lerp(a[0], b[0], t)),
+  Math.round(lerp(a[1], b[1], t)),
+  Math.round(lerp(a[2], b[2], t)),
+];
+const smooth = (t) => t * t * (3 - 2 * t);
+
+function zoneColors(p) {
+  const n = CHAPTERS.length;
+  const c0 = GEO.centerOf(0);
+  const cn = GEO.centerOf(n - 1);
+  if (p <= c0) return { bg: CHAPTERS[0].zone.bg, wash: CHAPTERS[0].zone.wash, fog: CHAPTERS[0].fog };
+  if (p >= cn) {
+    const l = CHAPTERS[n - 1];
+    return { bg: l.zone.bg, wash: l.zone.wash, fog: l.fog };
+  }
+  for (let i = 0; i < n - 1; i++) {
+    const a = GEO.centerOf(i);
+    const b = GEO.centerOf(i + 1);
+    if (p >= a && p <= b) {
+      const t = smooth((p - a) / (b - a));
+      return {
+        bg: mix3(CHAPTERS[i].zone.bg, CHAPTERS[i + 1].zone.bg, t),
+        wash: mix3(CHAPTERS[i].zone.wash, CHAPTERS[i + 1].zone.wash, t),
+        fog: mix3(CHAPTERS[i].fog, CHAPTERS[i + 1].fog, t),
+      };
+    }
+  }
+  const l = CHAPTERS[n - 1];
+  return { bg: l.zone.bg, wash: l.zone.wash, fog: l.fog };
+}
 
 export default function CosmicScene({
   reducedMotion,
   chartMode,
   marks,
   onToggleMark,
+  onHover,
+  onOpen,
   onWish,
 }) {
   const canvasRef = useRef(null);
-  const fgScreen = useRef([]); // projected foreground stars, for hit-testing
-  const streaks = useRef([]); // active high-speed streaks (wish carriers)
-  const wishFx = useRef(null); // { x, y, t0 } expanding confirmation
+  const fgScreen = useRef([]);
+  const plateRects = useRef([]);
+  const streaks = useRef([]);
+  const wishFx = useRef(null);
   const nextStreak = useRef(0);
+  const hovered = useRef(null);
+  const pendingTap = useRef(null);
+  const plates = useRef({}); // i -> { img, aspect, loaded }
 
-  // Mirror discrete props into a ref during an effect so the frame
-  // loop never goes stale — and React never re-renders per frame.
-  const live = useRef({ reducedMotion, chartMode, marks, onToggleMark, onWish });
+  const live = useRef({ reducedMotion, chartMode, marks, onToggleMark, onHover, onOpen, onWish });
   useEffect(() => {
-    live.current = { reducedMotion, chartMode, marks, onToggleMark, onWish };
+    live.current = { reducedMotion, chartMode, marks, onToggleMark, onHover, onOpen, onWish };
   });
 
   const smallScreen = useMemo(
@@ -56,8 +89,13 @@ export default function CosmicScene({
       window.matchMedia("(max-width: 720px)").matches,
     []
   );
+  const touchMode = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(hover: none)").matches,
+    []
+  );
 
-  // Stable universe data, generated once. Never randomize during render.
   const data = useMemo(() => {
     const rand = mulberry32(987654321);
     const layer = (n, rMin, rMax, aMin, aMax) =>
@@ -66,65 +104,39 @@ export default function CosmicScene({
         y: rand(),
         r: rMin + rand() * (rMax - rMin),
         a: aMin + rand() * (aMax - aMin),
-        c: pickTint(rand),
+        c: TINTS[Math.floor(rand() * TINTS.length)],
       }));
-    const density = smallScreen ? 0.55 : 1;
+    const density = smallScreen ? 0.6 : 1;
     return {
-      bg: layer(Math.floor(1100 * density), 0.4, 1.1, 0.12, 0.42),
-      mid: layer(Math.floor(480 * density), 0.6, 1.6, 0.2, 0.6),
+      bg: layer(Math.floor(1200 * density), 0.4, 1.2, 0.1, 0.45),
+      mid: layer(Math.floor(520 * density), 0.6, 1.7, 0.18, 0.62),
       fg: Array.from({ length: 150 }, (_, id) => ({
         id,
         x: rand(),
         y: rand(),
         r: 1 + rand() * 1.5,
         a: 0.45 + rand() * 0.55,
-        c: pickTint(rand),
+        c: TINTS[Math.floor(rand() * TINTS.length)],
       })),
-      arms: Array.from({ length: Math.floor(760 * density) }, () => ({
-        arm: rand() < 0.5 ? 0 : 1,
-        t: Math.pow(rand(), 0.7),
-        spread: (rand() + rand() + rand() - 1.5) * 0.09,
-        size: 0.8 + rand() * 1.8,
-        warm: rand() < 0.22,
-        a: 0.25 + rand() * 0.6,
-      })),
-      deep: Array.from({ length: Math.floor(1500 * density) }, () => ({
+      deep: Array.from({ length: Math.floor(1400 * density) }, () => ({
         x: rand(),
         y: rand(),
-        s: 0.5 + rand() * 1.5,
+        s: 0.5 + rand() * 1.6,
         c: Math.floor(rand() * 4),
         tw: rand() * Math.PI * 2,
       })),
-      nebula: Array.from({ length: 26 }, () => ({
-        x: 0.2 + rand() * 0.6,
-        y: 0.25 + rand() * 0.5,
-        r: 0.1 + rand() * 0.24,
-        hue: [215, 275, 315, 25][Math.floor(rand() * 4)],
+      fogblobs: Array.from({ length: 12 }, () => ({
+        x: 0.15 + rand() * 0.7,
+        y: 0.2 + rand() * 0.6,
+        r: 0.16 + rand() * 0.26,
         drift: rand() * Math.PI * 2,
+        speed: 0.02 + rand() * 0.04,
       })),
-      dust: Array.from({ length: 9 }, () => ({
-        x: 0.25 + rand() * 0.5,
-        y: 0.3 + rand() * 0.4,
-        r: 0.06 + rand() * 0.12,
-        drift: rand() * Math.PI * 2,
-      })),
-      bridge: Array.from({ length: 260 }, () => ({
-        t: rand(),
-        off: (rand() - 0.5) * 0.16,
-        s: 0.6 + rand() * 1.4,
-        a: 0.2 + rand() * 0.5,
-      })),
-      inflow: Array.from({ length: 320 }, () => ({
-        ang: rand() * Math.PI * 2,
-        r: 0.08 + Math.pow(rand(), 0.6) * 0.4,
-        s: 0.5 + rand() * 1.2,
-        a: 0.15 + rand() * 0.5,
-      })),
-      thread: Array.from({ length: 420 }, (_, i) => ({
+      thread: Array.from({ length: 460 }, (_, i) => ({
         arm: i % 2,
-        t: (i / 420 + rand() * 0.01) % 1,
-        size: 0.6 + rand() * 1.3,
-        a: 0.1 + rand() * 0.35,
+        t: (i / 460 + rand() * 0.01) % 1,
+        size: 0.6 + rand() * 1.4,
+        a: 0.1 + rand() * 0.38,
       })),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -132,17 +144,16 @@ export default function CosmicScene({
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     const rand = mulberry32(123456789);
     let W = 0;
     let H = 0;
     let raf = 0;
 
     const resize = () => {
-      const dpr = Math.min(
-        window.devicePixelRatio || 1,
-        smallScreen ? 1.25 : 1.5
-      );
+      const dpr = Math.min(window.devicePixelRatio || 1, smallScreen ? 1.25 : 1.5);
       W = window.innerWidth;
       H = window.innerHeight;
       canvas.width = Math.floor(W * dpr);
@@ -154,8 +165,7 @@ export default function CosmicScene({
     resize();
     window.addEventListener("resize", resize);
 
-    // Camera state — refs only, never React state.
-    let pS = 0; // smoothed progress (lags raw scroll → inertia)
+    let pS = 0;
     let mxS = 0;
     let myS = 0;
     let velS = 0;
@@ -169,39 +179,40 @@ export default function CosmicScene({
     window.addEventListener("mousemove", onMouse, { passive: true });
 
     const t0 = performance.now();
-    nextStreak.current = 6;
+    nextStreak.current = 7;
 
     const rgb = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
-    const drawStarLayer = (stars, f, flow, stretch) => {
+    // Eagerly fetch the opening plates; the rest stream in on approach.
+    const ensurePlate = (i) => {
+      const cache = plates.current;
+      if (cache[i] || typeof window === "undefined") return;
+      const rec = { img: null, aspect: 1.5, loaded: false };
+      cache[i] = rec;
+      const img = new Image();
+      img.decoding = "async";
+      img.onload = () => {
+        rec.img = img;
+        rec.aspect = img.naturalWidth / Math.max(1, img.naturalHeight);
+        rec.loaded = true;
+      };
+      img.src = CHAPTERS[i].image;
+    };
+    ensurePlate(0);
+    ensurePlate(1);
+
+    const drawStarLayer = (stars, f, flow, stretch, wash) => {
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
         const yy = (((s.y - flow * f) % 1) + 1) % 1;
         const x = (s.x + mxS * 0.02 * f) * W;
         const y = yy * H + myS * 14 * f;
         const len = Math.min(stretch * f, 26);
+        const c = mix3(s.c, wash, 0.35);
         ctx.globalAlpha = s.a;
-        ctx.fillStyle = rgb(s.c, 1);
-        if (len > 1.5) {
-          ctx.fillRect(x, y - len / 2, s.r * 0.8, len);
-        } else {
-          ctx.fillRect(x, y, s.r, s.r);
-        }
-      }
-      ctx.globalAlpha = 1;
-    };
-
-    const drawSpiralArms = (cx, cy, scale, rot, alpha, tintA, tintB) => {
-      for (let i = 0; i < data.arms.length; i++) {
-        const p = data.arms[i];
-        const ang =
-          (p.arm === 0 ? 0 : Math.PI) + p.t * 4.4 + rot + p.spread * 4;
-        const r = (0.03 + p.t * 0.3) * scale;
-        const x = cx + Math.cos(ang) * r;
-        const y = cy + Math.sin(ang) * r * 0.62;
-        ctx.globalAlpha = Math.min(1, p.a * alpha);
-        ctx.fillStyle = p.warm ? rgb(tintB, 1) : rgb(tintA, 1);
-        ctx.fillRect(x, y, p.size, p.size);
+        ctx.fillStyle = rgb(c, 1);
+        if (len > 1.5) ctx.fillRect(x, y - len / 2, s.r * 0.8, len);
+        else ctx.fillRect(x, y, s.r, s.r);
       }
       ctx.globalAlpha = 1;
     };
@@ -220,32 +231,49 @@ export default function CosmicScene({
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const raw = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
 
-      const ease = L.reducedMotion ? 1 : 0.065;
-      pS += (raw - pS) * ease;
-      const mEase = L.reducedMotion ? 1 : 0.045;
-      mxS += ((L.reducedMotion ? 0 : mouseX) - mxS) * mEase;
-      myS += ((L.reducedMotion ? 0 : mouseY) - myS) * mEase;
+      pS += (raw - pS) * (L.reducedMotion ? 1 : 0.065);
+      mxS += ((L.reducedMotion ? 0 : mouseX) - mxS) * (L.reducedMotion ? 1 : 0.045);
+      myS += ((L.reducedMotion ? 0 : mouseY) - myS) * (L.reducedMotion ? 1 : 0.045);
       const instVel = Math.abs(raw - prevRaw);
       prevRaw = raw;
       velS += ((L.reducedMotion ? 0 : instVel) - velS) * 0.08;
 
       const p = pS;
-      const vel = Math.min(velS * 60, 1); // fast scrolls → 1
+      const vel = Math.min(velS * 60, 1);
       const stretch = L.reducedMotion ? 0 : vel * 120;
       const flow = p * 1.7;
       const base = Math.min(W, H);
+      const zone = zoneColors(p);
 
-      // Space itself.
+      // Graded space — the environment itself changes color.
       ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = "#020308";
+      ctx.fillStyle = rgb(zone.bg, 1);
       ctx.fillRect(0, 0, W, H);
-      coreGlow(W * 0.5, H * 0.45, base * 0.9, "10,14,30", 0.5);
 
-      // Depth layers, back to front.
-      drawStarLayer(data.bg, 0.25, flow, stretch);
-      drawStarLayer(data.mid, 0.55, flow, stretch);
+      // Breathing fog fields in the zone's own color.
+      data.fogblobs.forEach((b) => {
+        const dx = L.reducedMotion ? 0 : Math.sin(t * b.speed * 2 + b.drift) * 0.03;
+        const bx = (b.x + dx) * W + mxS * 8;
+        const by = b.y * H + myS * 6;
+        const br = b.r * base * 1.4;
+        const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+        g.addColorStop(0, rgb(zone.fog, 0.1));
+        g.addColorStop(1, rgb(zone.fog, 0));
+        ctx.fillStyle = g;
+        ctx.fillRect(bx - br, by - br, br * 2, br * 2);
+      });
 
-      // Foreground points (chartable) + screen map for hit-testing.
+      // Opening glow: the outer edge burns cold at the start.
+      const intro = Math.max(0, 1 - p * 7);
+      if (intro > 0) {
+        coreGlow(W * 0.5, H * 0.46, base * 0.75, "140,165,230", 0.16 * intro);
+        coreGlow(W * 0.5, H * 0.46, base * 0.3, "220,230,250", 0.12 * intro);
+      }
+
+      drawStarLayer(data.bg, 0.25, flow, stretch, zone.wash);
+      drawStarLayer(data.mid, 0.55, flow, stretch, zone.wash);
+
+      // Foreground points (chartable) + hit-test map.
       fgScreen.current = [];
       for (let i = 0; i < data.fg.length; i++) {
         const s = data.fg[i];
@@ -254,8 +282,9 @@ export default function CosmicScene({
         const y = yy * H + myS * 14 * 0.85;
         fgScreen.current.push({ id: s.id, x, y });
         const marked = L.marks.includes(s.id);
+        const c = mix3(s.c, zone.wash, 0.3);
         ctx.globalAlpha = marked ? 1 : s.a;
-        ctx.fillStyle = marked ? "#f2f5fc" : rgb(s.c, 1);
+        ctx.fillStyle = marked ? "#f2f5fc" : rgb(c, 1);
         const r = marked ? s.r + 1.2 : s.r;
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -269,7 +298,6 @@ export default function CosmicScene({
       }
       ctx.globalAlpha = 1;
 
-      // Chart hairlines between marked points, in selection order.
       if (L.marks.length > 1) {
         ctx.strokeStyle = "rgba(205,213,230,0.34)";
         ctx.lineWidth = 0.6;
@@ -283,170 +311,107 @@ export default function CosmicScene({
         ctx.stroke();
       }
 
-      // The spiral thread connecting the whole journey.
-      let maxEnv = 0;
+      // Spiral thread — path through the universe, tinted by zone.
       const envs = CHAPTERS.map((_, i) => {
         const c = GEO.centerOf(i);
-        const e = Math.max(0, 1 - Math.abs(p - c) / INFLUENCE);
-        if (e > maxEnv) maxEnv = e;
-        return e;
+        return Math.max(0, 1 - Math.abs(p - c) / INFLUENCE);
       });
-      const threadA = 0.16 + 0.5 * (1 - maxEnv);
-      const rot = (L.reducedMotion ? 0 : t * 0.03) + p * 9;
+      const maxEnv = Math.max(...envs, 0);
+      const threadA = 0.2 + 0.55 * (1 - maxEnv);
+      const rot = (L.reducedMotion ? 0 : t * 0.035) + p * 10;
       const tcx = W * 0.5 + mxS * 12;
       const tcy = H * 0.52 + myS * 9;
+      const threadC = mix3([190, 200, 228], zone.wash, 0.55);
       for (let i = 0; i < data.thread.length; i++) {
         const s = data.thread[i];
         const ang = (s.arm === 0 ? 0 : Math.PI) + s.t * 5.2 + rot * (0.4 + s.t);
-        const r = (0.02 + s.t * 0.46) * base;
+        const r = (0.02 + s.t * 0.48) * base;
         ctx.globalAlpha = Math.min(1, s.a * threadA * 2);
-        ctx.fillStyle = "rgb(190,200,228)";
+        ctx.fillStyle = rgb(threadC, 1);
         ctx.fillRect(tcx + Math.cos(ang) * r, tcy + Math.sin(ang) * r * 0.7, s.size, s.size);
       }
       ctx.globalAlpha = 1;
 
-      // Environments.
+      // Hubble plates: distant → enormous → receding.
+      plateRects.current = [];
       ctx.globalCompositeOperation = "lighter";
       CHAPTERS.forEach((ch, i) => {
         const e = envs[i];
-        if (e <= 0.01) return;
-        const a = Math.pow(e, 1.35);
-        const local = Math.min(1, Math.max(0, (p - (GEO.centerOf(i) - INFLUENCE)) / (INFLUENCE * 2)));
+        if (e > 0.02) ensurePlate(i);
+        if (e <= 0.02) return;
+        const rec = plates.current[i];
+        const a = Math.pow(e, 1.25);
+        const local = clamp01((p - (GEO.centerOf(i) - INFLUENCE)) / (INFLUENCE * 2));
         const dir = i % 2 === 0 ? 1 : -1;
-        const gx = W * ch.anchor.x + dir * (0.5 - local) * W * 0.1 + mxS * 22;
-        const gy = H * (ch.anchor.y + (0.5 - local) * 0.6) + myS * 16;
-        const sc = base * (0.4 + local * 1.15);
+        const gx = W * 0.5 + dir * (0.5 - local) * W * 0.12 + mxS * 22;
+        const gy = H * (0.46 + (0.5 - local) * 0.62) + myS * 16;
+        const isHot = hovered.current === ch.slug;
 
-        if (ch.type === "spiral") {
-          coreGlow(gx, gy, sc * 0.32, "235,225,205", 0.35 * a);
-          coreGlow(gx, gy, sc * 0.6, "120,140,200", 0.12 * a);
-          drawSpiralArms(
-            gx, gy, sc,
-            (L.reducedMotion ? 0 : t * 0.05) + p * 6,
-            a, ch.tint, ch.warm
-          );
-        } else if (ch.type === "stars") {
-          coreGlow(gx, gy, sc * 0.4, "150,170,220", 0.1 * a);
-        } else if (ch.type === "nebula") {
-          data.nebula.forEach((b) => {
-            const dx = L.reducedMotion ? 0 : Math.sin(t * 0.05 + b.drift) * 0.02;
-            const dy = L.reducedMotion ? 0 : Math.cos(t * 0.04 + b.drift) * 0.02;
-            const bx = gx + (b.x - 0.5) * sc * 1.6 + dx * W;
-            const by = gy + (b.y - 0.5) * sc * 1.6 + dy * H;
-            const br = b.r * sc * (0.8 + local * 0.6);
-            const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-            g.addColorStop(0, `hsla(${b.hue},45%,42%,${0.16 * a})`);
-            g.addColorStop(1, "hsla(0,0%,0%,0)");
-            ctx.fillStyle = g;
-            ctx.fillRect(bx - br, by - br, br * 2, br * 2);
-          });
-          data.dust.forEach((d) => {
-            const bx = gx + (d.x - 0.5) * sc * 1.5;
-            const by = gy + (d.y - 0.5) * sc * 1.5;
-            const br = d.r * sc;
-            ctx.globalCompositeOperation = "source-over";
-            const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-            g.addColorStop(0, `rgba(2,3,8,${0.55 * a})`);
-            g.addColorStop(1, "rgba(2,3,8,0)");
-            ctx.fillStyle = g;
-            ctx.fillRect(bx - br, by - br, br * 2, br * 2);
-            ctx.globalCompositeOperation = "lighter";
-          });
-          coreGlow(gx, gy, sc * 0.2, "255,240,220", 0.22 * a);
-        } else if (ch.type === "collision") {
-          const sep = sc * 0.3 * (1.2 - local * 0.7);
-          drawSpiralArms(gx - sep, gy, sc * 0.7, t * 0.04 + p * 5, a, [170, 190, 235], [235, 200, 165]);
-          drawSpiralArms(gx + sep, gy - sc * 0.05, sc * 0.55, -t * 0.035 + p * 4, a, [235, 200, 170], [170, 190, 235]);
-          coreGlow(gx - sep, gy, sc * 0.2, "240,230,210", 0.3 * a);
-          coreGlow(gx + sep, gy, sc * 0.18, "220,225,245", 0.3 * a);
-          ctx.fillStyle = "rgb(220,222,235)";
-          data.bridge.forEach((b) => {
-            const x = gx - sep + b.t * sep * 2 + b.off * sc;
-            const y = gy + b.off * sc * 0.6 + Math.sin(b.t * 9) * 4;
-            ctx.globalAlpha = Math.min(1, b.a * a);
-            ctx.fillRect(x, y, b.s, b.s);
-          });
-          ctx.globalAlpha = 1;
-        } else if (ch.type === "pillars") {
-          coreGlow(gx, gy - sc * 0.3, sc * 0.7, "255,236,200", 0.14 * a);
-          const cols = [-0.16, 0.02, 0.19];
-          cols.forEach((cx0, ci) => {
-            const cx = gx + cx0 * sc * 1.4;
-            const wdt = sc * (0.09 - ci * 0.015);
-            const top = gy - sc * 0.42;
-            const hgt = sc * 0.85;
-            const g = ctx.createLinearGradient(0, top, 0, top + hgt);
-            g.addColorStop(0, `rgba(6,8,18,${0.85 * a})`);
-            g.addColorStop(1, `rgba(6,8,18,${0.25 * a})`);
-            ctx.globalCompositeOperation = "source-over";
-            ctx.fillStyle = g;
-            ctx.fillRect(cx - wdt / 2, top, wdt, hgt);
-            ctx.globalCompositeOperation = "lighter";
-            ctx.globalAlpha = 0.5 * a;
-            ctx.fillStyle = "rgb(255,214,170)";
-            ctx.fillRect(cx - wdt / 2 - 1, top, 1.4, hgt);
-            ctx.globalAlpha = 1;
-          });
-          coreGlow(gx, gy + sc * 0.3, sc * 0.3, "140,160,230", 0.12 * a);
-        } else if (ch.type === "deepfield") {
-          const zoom = 0.6 + local * 0.9;
-          data.deep.forEach((d) => {
-            const x = gx + (d.x - 0.5) * sc * 1.9 * zoom + mxS * 8;
-            const y = gy + (d.y - 0.5) * sc * 1.9 * zoom + myS * 6;
-            const tw = L.reducedMotion ? 1 : 0.6 + 0.4 * Math.sin(t * 0.8 + d.tw);
-            ctx.globalAlpha = Math.min(1, 0.75 * a * tw);
-            ctx.fillStyle = rgb(TINTS[d.c], 1);
-            const s = d.s * (0.7 + local * 0.8);
-            ctx.fillRect(x, y, s, s);
-          });
-          ctx.globalAlpha = 1;
-        } else if (ch.type === "quasar") {
-          coreGlow(gx, gy, sc * 0.5, "160,190,255", 0.2 * a);
-          coreGlow(gx, gy, sc * 0.12, "255,255,255", 0.75 * a);
-          ctx.globalAlpha = 0.5 * a;
-          ctx.fillStyle = "rgb(190,210,250)";
-          const beamL = sc * (0.8 + local * 0.5);
-          ctx.fillRect(gx - 0.75, gy - beamL, 1.5, beamL * 2);
-          ctx.fillRect(gx - beamL, gy - 0.75, beamL * 2, 1.5);
-          ctx.globalAlpha = 1;
-          ctx.strokeStyle = `rgba(180,200,245,${0.25 * a})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(gx, gy, sc * 0.2, 0, Math.PI * 2);
-          ctx.stroke();
-        } else if (ch.type === "unknown") {
-          const pulse = L.reducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(t * 0.4);
-          ctx.strokeStyle = `rgba(190,200,230,${(0.1 + 0.14 * pulse) * a})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(gx, gy, sc * 0.22, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(gx, gy, sc * 0.3, 0, Math.PI * 2);
-          ctx.globalAlpha = 0.4 * a;
-          ctx.stroke();
-          ctx.globalAlpha = 1;
-          ctx.fillStyle = "rgb(200,208,230)";
-          data.inflow.forEach((s) => {
-            const ang = s.ang + (L.reducedMotion ? 0 : t * 0.02);
-            const x = gx + Math.cos(ang) * s.r * sc;
-            const y = gy + Math.sin(ang) * s.r * sc;
-            ctx.globalAlpha = Math.min(1, s.a * a);
-            ctx.fillRect(x, y, s.s, s.s);
-          });
-          ctx.globalAlpha = 1;
-          coreGlow(gx, gy, sc * 0.08, "220,228,250", 0.4 * a);
+        coreGlow(gx, gy, base * 0.55, `${ch.accent[0]},${ch.accent[1]},${ch.accent[2]}`, 0.1 * a);
+        coreGlow(gx, gy, base * 0.9, `${zone.fog[0]},${zone.fog[1]},${zone.fog[2]}`, 0.08 * a);
+
+        if (rec && rec.loaded && rec.img) {
+          let h = Math.min(H * 1.05, base * (0.34 + local * 1.35));
+          if (isHot) h *= 1.06;
+          let w = h * rec.aspect;
+          if (w > W * 1.35) {
+            w = W * 1.35;
+            h = w / rec.aspect;
+          }
+          plateRects.current.push({ slug: ch.slug, cx: gx, cy: gy, w, h, e });
+          ctx.save();
+          ctx.globalAlpha = Math.min(1, a * (isHot ? 1 : 0.96));
+          ctx.translate(gx, gy);
+          ctx.rotate(dir * (local - 0.5) * 0.05);
+          const far = 1 - Math.min(1, e / 0.45);
+          try {
+            ctx.filter =
+              far > 0.03
+                ? `blur(${(far * 7).toFixed(1)}px) brightness(${(0.72 + 0.3 * (1 - far) + (isHot ? 0.1 : 0)).toFixed(2)})`
+                : isHot
+                  ? "brightness(1.1)"
+                  : "none";
+          } catch {
+            /* older engines ignore filter */
+          }
+          ctx.drawImage(rec.img, -w / 2, -h / 2, w, h);
+          ctx.restore();
+          ctx.filter = "none";
+        } else {
+          // Unloaded plates still bend light: a tinted phantom core.
+          coreGlow(gx, gy, base * (0.2 + local * 0.3), `${ch.accent[0]},${ch.accent[1]},${ch.accent[2]}`, 0.16 * a);
         }
       });
       ctx.globalCompositeOperation = "source-over";
 
-      // Rare high-speed streaks — the only clickable sky events.
+      // Deep-field grain swells near the monochrome zone.
+      const deepEnv = envs[6] || 0;
+      if (deepEnv > 0.03) {
+        const ch = CHAPTERS[6];
+        const gx = W * 0.5 + mxS * 8;
+        const gy = H * 0.46 + myS * 6;
+        const zoom = 0.7 + deepEnv * 0.7;
+        for (let i = 0; i < data.deep.length; i++) {
+          const d = data.deep[i];
+          const x = gx + (d.x - 0.5) * base * 1.9 * zoom;
+          const y = gy + (d.y - 0.5) * base * 1.9 * zoom;
+          const tw = L.reducedMotion ? 1 : 0.6 + 0.4 * Math.sin(t * 0.8 + d.tw);
+          ctx.globalAlpha = Math.min(1, 0.7 * deepEnv * tw);
+          ctx.fillStyle = rgb(TINTS[d.c], 1);
+          const s = d.s * (0.7 + deepEnv * 0.8);
+          ctx.fillRect(x, y, s, s);
+        }
+        ctx.globalAlpha = 1;
+        void ch;
+      }
+
+      // Rare streaks — clickable sky events carrying wishes.
       if (!L.reducedMotion && t > nextStreak.current && streaks.current.length < 2) {
         const fromLeft = rand() < 0.5;
         streaks.current.push({
           x: fromLeft ? -80 : W * (0.3 + rand() * 0.6),
           y: H * (0.08 + rand() * 0.3),
-          vx: (fromLeft ? 1 : -1) * (W * (0.9 + rand() * 0.5)),
+          vx: (fromLeft ? 1 : -1) * W * (0.9 + rand() * 0.5),
           vy: H * (0.25 + rand() * 0.3),
           life: 0,
         });
@@ -459,11 +424,9 @@ export default function CosmicScene({
         const alive = s.life < 2.4 && s.x > -200 && s.x < W + 200 && s.y < H + 200;
         if (!alive) return false;
         const fade = Math.min(1, s.life * 6) * Math.max(0, 1 - (s.life - 1.4));
-        const nx = -s.vx;
-        const ny = -s.vy;
-        const mag = Math.hypot(nx, ny) || 1;
-        const tx = (nx / mag) * 130;
-        const ty = (ny / mag) * 130;
+        const mag = Math.hypot(s.vx, s.vy) || 1;
+        const tx = (-s.vx / mag) * 130;
+        const ty = (-s.vy / mag) * 130;
         const grad = ctx.createLinearGradient(s.x, s.y, s.x + tx, s.y + ty);
         grad.addColorStop(0, `rgba(255,255,255,${0.85 * fade})`);
         grad.addColorStop(1, "rgba(255,255,255,0)");
@@ -480,13 +443,12 @@ export default function CosmicScene({
         return true;
       });
 
-      // Wish confirmation: a ring opens, specks drift out, words fade.
+      // Wish confirmation: ring opens, specks drift, words fade.
       if (wishFx.current) {
         const w = wishFx.current;
         const age = (now - w.t0) / 1000;
-        if (age > 2.2) {
-          wishFx.current = null;
-        } else {
+        if (age > 2.2) wishFx.current = null;
+        else {
           const k = age / 2.2;
           ctx.strokeStyle = `rgba(215,222,240,${0.5 * (1 - k)})`;
           ctx.lineWidth = 1;
@@ -496,18 +458,39 @@ export default function CosmicScene({
           ctx.fillStyle = `rgba(215,222,240,${0.6 * (1 - k)})`;
           for (let i = 0; i < 10; i++) {
             const ang = (i / 10) * Math.PI * 2 + 0.4;
-            ctx.fillRect(
-              w.x + Math.cos(ang) * k * 56,
-              w.y + Math.sin(ang) * k * 56,
-              1.4,
-              1.4
-            );
+            ctx.fillRect(w.x + Math.cos(ang) * k * 56, w.y + Math.sin(ang) * k * 56, 1.4, 1.4);
           }
           ctx.fillStyle = `rgba(217,220,229,${0.75 * (1 - k * k)})`;
           ctx.font = "10px system-ui, sans-serif";
           ctx.textAlign = "center";
           ctx.fillText("W I S H   R E C O R D E D", w.x, w.y + 34);
         }
+      }
+
+      // Plate hover discovery (suppressed while charting).
+      if (!L.chartMode) {
+        const hx = (mouseX * 0.5 + 0.5) * W;
+        const hy = (mouseY * 0.5 + 0.5) * H;
+        let found = null;
+        for (const r of plateRects.current) {
+          if (r.e < 0.35) continue;
+          const dx = (hx - r.cx) / (r.w * 0.475);
+          const dy = (hy - r.cy) / (r.h * 0.475);
+          if (dx * dx + dy * dy < 1) {
+            found = r.slug;
+            break;
+          }
+        }
+        if (found !== hovered.current) {
+          hovered.current = found;
+          pendingTap.current = null;
+          canvas.style.cursor = found ? "pointer" : "crosshair";
+          L.onHover(found);
+        }
+      } else if (hovered.current !== null) {
+        hovered.current = null;
+        canvas.style.cursor = "crosshair";
+        L.onHover(null);
       }
 
       raf = requestAnimationFrame(frame);
@@ -522,12 +505,13 @@ export default function CosmicScene({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Click: chartable star first (chart mode), else streak head (wish).
   const onClick = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const L = live.current;
+
+    // Charting takes over all clicks.
     if (L.chartMode) {
       let best = null;
       let bestD = 36;
@@ -541,6 +525,31 @@ export default function CosmicScene({
       if (best) L.onToggleMark(best.id);
       return;
     }
+
+    // Plates: hover-capable pointers open at once; touch taps arm, then open.
+    const hit = plateRects.current.find((r) => {
+      if (r.e < 0.35) return false;
+      const dx = (x - r.cx) / (r.w * 0.475);
+      const dy = (y - r.cy) / (r.h * 0.475);
+      return dx * dx + dy * dy < 1;
+    });
+    if (hit) {
+      if (touchMode) {
+        if (pendingTap.current === hit.slug) {
+          pendingTap.current = null;
+          L.onOpen(hit.slug);
+        } else {
+          pendingTap.current = hit.slug;
+          hovered.current = hit.slug;
+          L.onHover(hit.slug);
+        }
+      } else {
+        L.onOpen(hit.slug);
+      }
+      return;
+    }
+    pendingTap.current = null;
+
     for (const s of streaks.current) {
       if (Math.hypot(s.x - x, s.y - y) < 64) {
         wishFx.current = { x: s.x, y: s.y, t0: performance.now() };
@@ -551,12 +560,18 @@ export default function CosmicScene({
     }
   };
 
+  // Touch pointers never hover — clear stale discovery state on tap-away.
+  const onTouchEnd = () => {
+    if (!touchMode) return;
+  };
+
   return (
     <canvas
       ref={canvasRef}
       className="cosmos"
       aria-hidden="true"
       onClick={onClick}
+      onTouchEnd={onTouchEnd}
     />
   );
 }
