@@ -67,6 +67,7 @@ export default function CosmicScene({
   onHover,
   onOpen,
   onWish,
+  revealed = true,
 }) {
   const canvasRef = useRef(null);
   const fgScreen = useRef([]);
@@ -78,9 +79,9 @@ export default function CosmicScene({
   const pendingTap = useRef(null);
   const plates = useRef({}); // i -> { img, aspect, loaded }
 
-  const live = useRef({ reducedMotion, chartMode, marks, onToggleMark, onHover, onOpen, onWish });
+  const live = useRef({ reducedMotion, chartMode, marks, onToggleMark, onHover, onOpen, onWish, revealed });
   useEffect(() => {
-    live.current = { reducedMotion, chartMode, marks, onToggleMark, onHover, onOpen, onWish };
+    live.current = { reducedMotion, chartMode, marks, onToggleMark, onHover, onOpen, onWish, revealed };
   });
 
   const smallScreen = useMemo(
@@ -170,6 +171,7 @@ export default function CosmicScene({
     let myS = 0;
     let velS = 0;
     let prevRaw = 0;
+    let revealS = 0; // 0 = deep inside the void, 1 = fully arrived
     let mouseX = 0;
     let mouseY = 0;
     const onMouse = (e) => {
@@ -201,7 +203,7 @@ export default function CosmicScene({
     ensurePlate(0);
     ensurePlate(1);
 
-    const drawStarLayer = (stars, f, flow, stretch, wash) => {
+    const drawStarLayer = (stars, f, flow, stretch, wash, fade = 1) => {
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
         const yy = (((s.y - flow * f) % 1) + 1) % 1;
@@ -209,7 +211,7 @@ export default function CosmicScene({
         const y = yy * H + myS * 14 * f;
         const len = Math.min(stretch * f, 26);
         const c = mix3(s.c, wash, 0.42);
-        ctx.globalAlpha = s.a;
+        ctx.globalAlpha = s.a * fade;
         ctx.fillStyle = rgb(c, 1);
         if (len > 1.5) ctx.fillRect(x, y - len / 2, s.r * 0.8, len);
         else ctx.fillRect(x, y, s.r, s.r);
@@ -238,9 +240,19 @@ export default function CosmicScene({
       prevRaw = raw;
       velS += ((L.reducedMotion ? 0 : instVel) - velS) * 0.08;
 
+      // Cinematic arrival: glide 0 -> 1 very slowly for a dolly zoom-out.
+      const revealTarget = L.revealed ? 1 : 0;
+      if (L.reducedMotion) revealS = revealTarget;
+      else revealS += (revealTarget - revealS) * 0.022;
+      if (Math.abs(revealTarget - revealS) < 0.0005) revealS = revealTarget;
+      const easeReveal = smooth(Math.min(1, Math.max(0, revealS)));
+      const arrival = easeReveal; // 0 hidden, 1 arrived
+      const zoom = 2.4 - 1.4 * easeReveal; // 2.4x deep inside -> 1x universe
+      const rush = (1 - easeReveal) * 160; // warp streaks while pulling back
+
       const p = pS;
       const vel = Math.min(velS * 60, 1);
-      const stretch = L.reducedMotion ? 0 : vel * 120;
+      const stretch = L.reducedMotion ? 0 : vel * 120 + rush;
       const flow = p * 1.7;
       const base = Math.min(W, H);
       const zone = zoneColors(p);
@@ -249,6 +261,13 @@ export default function CosmicScene({
       ctx.globalCompositeOperation = "source-over";
       ctx.fillStyle = rgb(zone.bg, 1);
       ctx.fillRect(0, 0, W, H);
+
+      // Dolly zoom-out: the whole cosmos rushes outward from center.
+      ctx.save();
+      ctx.translate(W / 2, H / 2);
+      ctx.scale(zoom, zoom);
+      ctx.translate(-W / 2, -H / 2);
+      ctx.globalAlpha = 0.15 + 0.85 * arrival;
 
       // Breathing fog fields in the zone's own color.
       data.fogblobs.forEach((b) => {
@@ -270,16 +289,20 @@ export default function CosmicScene({
         coreGlow(W * 0.5, H * 0.46, base * 0.3, "220,230,250", 0.12 * intro);
       }
 
-      drawStarLayer(data.bg, 0.25, flow, stretch, zone.wash);
-      drawStarLayer(data.mid, 0.55, flow, stretch, zone.wash);
+      drawStarLayer(data.bg, 0.25, flow, stretch, zone.wash, 0.15 + 0.85 * arrival);
+      drawStarLayer(data.mid, 0.55, flow, stretch, zone.wash, 0.15 + 0.85 * arrival);
       // Foreground points (chartable) + hit-test map.
+      // Note: world is drawn under a dolly-zoom transform; hit map stores
+      // screen-space coords so clicks stay accurate mid-zoom.
+      const toSX = (x) => W / 2 + (x - W / 2) * zoom;
+      const toSY = (y) => H / 2 + (y - H / 2) * zoom;
       fgScreen.current = [];
       for (let i = 0; i < data.fg.length; i++) {
         const s = data.fg[i];
         const yy = (((s.y - flow * 0.85) % 1) + 1) % 1;
         const x = (s.x + mxS * 0.02 * 0.85) * W;
         const y = yy * H + myS * 14 * 0.85;
-        fgScreen.current.push({ id: s.id, x, y });
+        fgScreen.current.push({ id: s.id, x: toSX(x), y: toSY(y) });
         const marked = L.marks.includes(s.id);
         const c = mix3(s.c, zone.wash, 0.4);
         ctx.globalAlpha = marked ? 1 : s.a;
@@ -367,7 +390,7 @@ export default function CosmicScene({
           const over = 1 + Math.abs(rot) * 2; // overscan so rotation never reveals edges
           tw *= over;
           th *= over;
-          plateRects.current.push({ slug: ch.slug, cx: gx, cy: gy, w: tw, h: th, e });
+          plateRects.current.push({ slug: ch.slug, cx: toSX(gx), cy: toSY(gy), w: tw * zoom, h: th * zoom, e });
           ctx.save();
           ctx.globalAlpha = Math.min(1, a);
           ctx.translate(gx, gy);
@@ -403,11 +426,11 @@ export default function CosmicScene({
         const ch = CHAPTERS[6];
         const gx = W * 0.5 + mxS * 8;
         const gy = H * 0.46 + myS * 6;
-        const zoom = 0.7 + deepEnv * 0.7;
+        const dzoom = 0.7 + deepEnv * 0.7;
         for (let i = 0; i < data.deep.length; i++) {
           const d = data.deep[i];
-          const x = gx + (d.x - 0.5) * base * 1.9 * zoom;
-          const y = gy + (d.y - 0.5) * base * 1.9 * zoom;
+          const x = gx + (d.x - 0.5) * base * 1.9 * dzoom;
+          const y = gy + (d.y - 0.5) * base * 1.9 * dzoom;
           const tw = L.reducedMotion ? 1 : 0.6 + 0.4 * Math.sin(t * 0.8 + d.tw);
           ctx.globalAlpha = Math.min(1, 0.7 * deepEnv * tw);
           ctx.fillStyle = rgb(TINTS[d.c], 1);
@@ -480,8 +503,23 @@ export default function CosmicScene({
         }
       }
 
-      // Plate hover discovery (suppressed while charting).
-      if (!L.chartMode) {
+      ctx.globalAlpha = 1;
+      ctx.restore(); // end dolly zoom-out
+
+      // Void fade: the canvas itself stays black until arrival completes.
+      if (arrival < 1) {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = `rgba(0,0,0,${(1 - arrival).toFixed(3)})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      // Plate hover discovery (suppressed while charting + during arrival).
+      if (!L.revealed) {
+        if (hovered.current !== null) {
+          hovered.current = null;
+          L.onHover(null);
+        }
+      } else if (!L.chartMode) {
         const hx = (mouseX * 0.5 + 0.5) * W;
         const hy = (mouseY * 0.5 + 0.5) * H;
         let found = null;
@@ -519,10 +557,11 @@ export default function CosmicScene({
   }, []);
 
   const onClick = (e) => {
+    const L = live.current;
+    if (!L.revealed) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const L = live.current;
 
     // Charting takes over all clicks.
     if (L.chartMode) {

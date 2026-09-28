@@ -10,14 +10,16 @@ const slugFromHash = () =>
     ? null
     : window.location.hash.match(/^#\/object\/([\w-]+)$/)?.[1] ?? null;
 
-const LOAD_LINES = ["INITIALIZING", "STELLAR FIELD", "CALIBRATING OPTICS"];
-
 // One continuous descent. Canvas is the world; DOM is instruments, archive
 // labels, the loading sequence, and SPA detail overlays (hash-routed so
 // back-button works and scroll/state/audio are preserved underneath).
+//
+// Opening choreography:
+//   1. Pure black screen, 3.0s infinity loader (universe aura).
+//   2. Hold on black until first hover / move / touch / key.
+//   3. That gesture triggers a slow cinematic zoom-out into the universe.
 export default function Universe() {
-  const [veiled, setVeiled] = useState(true);
-  const [gone, setGone] = useState(false);
+  const [phase, setPhase] = useState("loading"); // loading | await | zoom | gone
   const [loadPct, setLoadPct] = useState(0);
   const [active, setActive] = useState(-1);
   const [chartMode, setChartMode] = useState(false);
@@ -29,52 +31,76 @@ export default function Universe() {
   const pushedRef = useRef(false);
   const reducedMotion = useReducedMotion();
 
-  // Loading = real asset preload (all plates) under a cinematic sequence.
-  // A hard 7s fallback guarantees the veil always lifts.
+  // Black-screen infinity load: exactly ~3s. Assets preload silently
+  // underneath but never gate the timing — the aura is the experience.
   useEffect(() => {
-    let loaded = 0;
-    const total = CHAPTERS.length;
-    const stamp = Date.now();
     CHAPTERS.forEach((ch) => {
       const im = new Image();
-      im.onload = () => {
-        loaded++;
-      };
-      im.onerror = () => {
-        loaded++;
-      };
+      im.decoding = "async";
       im.src = ch.image;
     });
-    const iv = setInterval(() => {
-      const elapsed = (Date.now() - stamp) / 1000;
-      const timePct = Math.min(92, (elapsed / 1.6) * 92);
-      const realPct = (loaded / total) * 92;
-      const v = Math.min(92, Math.max(timePct, realPct));
-      setLoadPct(Math.floor(v >= 92 && loaded >= total ? 100 : v));
-      if (loaded >= total) {
+    if (window.scrollY) window.scrollTo(0, 0);
+    const DURATION = 3000;
+    const stamp = performance.now();
+    let raf = 0;
+    const tick = (now) => {
+      const k = Math.min(1, (now - stamp) / DURATION);
+      // ease slightly so the tail feels like coalescing, not stalling
+      const eased = k < 0.7 ? k / 0.7 : 0.7 + ((k - 0.7) / 0.3) * 0.3;
+      setLoadPct(Math.min(100, Math.floor(eased * 100)));
+      if (k < 1) raf = requestAnimationFrame(tick);
+      else {
         setLoadPct(100);
-        clearInterval(iv);
+        setPhase((p) => (p === "loading" ? "await" : p));
       }
-    }, 100);
-    const force = setTimeout(() => {
-      setLoadPct(100);
-      clearInterval(iv);
-    }, 7000);
-    return () => {
-      clearInterval(iv);
-      clearTimeout(force);
     };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
+  // After the 3s complete, the FIRST hover / move / touch / key press
+  // triggers the cinematic zoom-out. Reduced-motion users auto-enter.
   useEffect(() => {
-    if (loadPct < 100) return;
-    const a = setTimeout(() => setVeiled(false), 350);
-    const b = setTimeout(() => setGone(true), 1600);
+    if (phase !== "await") return;
+    if (reducedMotion) {
+      const t = setTimeout(() => setPhase("zoom"), 400);
+      return () => clearTimeout(t);
+    }
+    const enter = () => setPhase((p) => (p === "await" ? "zoom" : p));
+    const opts = { passive: true };
+    window.addEventListener("pointermove", enter, opts);
+    window.addEventListener("mousemove", enter, opts);
+    window.addEventListener("touchstart", enter, opts);
+    window.addEventListener("touchmove", enter, opts);
+    window.addEventListener("wheel", enter, opts);
+    window.addEventListener("keydown", enter);
+    window.addEventListener("click", enter);
     return () => {
-      clearTimeout(a);
-      clearTimeout(b);
+      window.removeEventListener("pointermove", enter);
+      window.removeEventListener("mousemove", enter);
+      window.removeEventListener("touchstart", enter);
+      window.removeEventListener("touchmove", enter);
+      window.removeEventListener("wheel", enter);
+      window.removeEventListener("keydown", enter);
+      window.removeEventListener("click", enter);
     };
-  }, [loadPct]);
+  }, [phase, reducedMotion]);
+
+  // Zoom-out runs its cinematic course (~2.6s), then the veil is gone.
+  useEffect(() => {
+    if (phase !== "zoom") return;
+    const t = setTimeout(() => setPhase("gone"), reducedMotion ? 300 : 2600);
+    return () => clearTimeout(t);
+  }, [phase, reducedMotion]);
+
+  // Lock scroll while the void / zoom holds — the universe waits underneath.
+  useEffect(() => {
+    const locked = phase !== "gone" || detailSlug;
+    document.body.style.overflow = locked ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [phase, detailSlug]);
 
   // Chapter observation for the position readout + audio zoning.
   useEffect(() => {
@@ -116,14 +142,6 @@ export default function Universe() {
     }
   };
 
-  // Lock scroll inside the detail; the universe waits exactly as it was.
-  useEffect(() => {
-    document.body.style.overflow = detailSlug ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [detailSlug]);
-
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") {
@@ -153,8 +171,7 @@ export default function Universe() {
 
   const hoverCh = hoverSlug ? CHAPTERS.find((c) => c.slug === hoverSlug) : null;
   const detail = detailSlug ? CHAPTERS.find((c) => c.slug === detailSlug) : null;
-  const loadLine =
-    loadPct < 45 ? LOAD_LINES[0] : loadPct < 85 ? LOAD_LINES[1] : loadPct < 100 ? LOAD_LINES[2] : "ENTERING";
+  const revealed = phase === "zoom" || phase === "gone";
 
   return (
     <div className="uni">
@@ -166,13 +183,70 @@ export default function Universe() {
         onHover={setHoverSlug}
         onOpen={openDetail}
         onWish={() => setWishCount((c) => c + 1)}
+        revealed={revealed}
       />
 
-      {!gone && (
-        <div className={`veil ${veiled ? "" : "lifted"}`} role="status" aria-label="Loading universe">
+      {phase !== "gone" && (
+        <div
+          className={`veil veil-void phase-${phase}`}
+          role="status"
+          aria-label={
+            phase === "loading" ? "Loading universe" : phase === "await" ? "Move to enter the universe" : "Entering universe"
+          }
+        >
+          <div className="veil-nebula neb-a" aria-hidden="true" />
+          <div className="veil-nebula neb-b" aria-hidden="true" />
+          <div className="veil-stardust" aria-hidden="true" />
+
+          <div className="veil-infinity-wrap">
+            <svg className="veil-infinity" viewBox="0 0 320 140" aria-hidden="true">
+              <defs>
+                <linearGradient id="inf-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#5b6ee1" />
+                  <stop offset="35%" stopColor="#9d7bff" />
+                  <stop offset="65%" stopColor="#5ee6d0" />
+                  <stop offset="100%" stopColor="#5b6ee1" />
+                </linearGradient>
+                <filter id="inf-glow" x="-60%" y="-60%" width="220%" height="220%">
+                  <feGaussianBlur stdDeviation="6" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <path
+                className="inf-track"
+                d="M 70 70 C 70 30, 120 22, 160 70 C 200 118, 250 110, 250 70 C 250 30, 200 22, 160 70 C 120 118, 70 110, 70 70 Z"
+              />
+              <path
+                className="inf-flow"
+                filter="url(#inf-glow)"
+                stroke="url(#inf-grad)"
+                d="M 70 70 C 70 30, 120 22, 160 70 C 200 118, 250 110, 250 70 C 250 30, 200 22, 160 70 C 120 118, 70 110, 70 70 Z"
+              />
+              <circle className="inf-comet" cx="0" cy="0" r="3.2" filter="url(#inf-glow)">
+                <animateMotion
+                  dur="3s"
+                  repeatCount="indefinite"
+                  path="M 70 70 C 70 30, 120 22, 160 70 C 200 118, 250 110, 250 70 C 250 30, 200 22, 160 70 C 120 118, 70 110, 70 70 Z"
+                />
+              </circle>
+            </svg>
+            <div className="veil-core" aria-hidden="true" />
+          </div>
+
           <p className="veil-brand">Tiny Universe</p>
-          <p className="veil-line">{loadLine}</p>
-          <p className="veil-pct">{String(loadPct).padStart(3, "0")} / 100</p>
+          {phase === "loading" ? (
+            <p className="veil-line">universe loading — {String(loadPct).padStart(3, "0")} / 100</p>
+          ) : phase === "await" ? (
+            <p className="veil-enter">
+              <span className="veil-enter-pulse">move to enter</span>
+              <span className="veil-enter-sub">hover · touch · scroll</span>
+            </p>
+          ) : (
+            <p className="veil-line">entering</p>
+          )}
         </div>
       )}
 
