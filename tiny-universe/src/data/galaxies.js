@@ -22,11 +22,11 @@
 // ─────────────────────────────────────────────────────────────
 
 export const SCROLL = {
-  // A true descent: long approach, long dwell, real transition voids
-  // between worlds. Each reign is ~5 viewports of travel.
-  introVh: 170,
-  chapterVh: 520,
-  outroVh: 240,
+  // One stage per destination: ~2 viewports of dwell so text and image
+  // arrive together, hold, then hand off smoothly through ambient dark.
+  introVh: 100,
+  chapterVh: 200,
+  outroVh: 120,
 };
 
 export function scrollGeometry() {

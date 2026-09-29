@@ -26,8 +26,6 @@ export default function Universe() {
   const [chartMode, setChartMode] = useState(false);
   const [marks, setMarks] = useState([]);
   const [formationName, setFormationName] = useState("");
-  const [wishCount, setWishCount] = useState(0);
-  const [hoverSlug, setHoverSlug] = useState(null);
   const [detailSlug, setDetailSlug] = useState(slugFromHash);
   const pushedRef = useRef(false);
   const trackRef = useRef(null);
@@ -98,9 +96,9 @@ export default function Universe() {
     };
   }, [phase, detailSlug]);
 
-  // Progressive discovery: per-frame envelope per chapter drives staged
-  // CSS reveals (title → designation → description → metadata). No React
-  // state per frame — CSS vars on refs, one discrete active index.
+  // One shared envelope per stage drives text AND image together, so the
+  // galaxy and its words always arrive as one. No React state per frame —
+  // CSS vars on refs, one discrete active index.
   useEffect(() => {
     let raf = 0;
     const env = new Array(CHAPTERS.length).fill(0);
@@ -114,8 +112,8 @@ export default function Universe() {
           const r = el.getBoundingClientRect();
           const center = r.top + r.height / 2;
           const dist = Math.abs(center - vh / 2);
-          const target = Math.max(0, 1 - dist / (vh * 1.15));
-          const e = reducedMotion ? (target > 0.4 ? 1 : 0) : env[i] + (target - env[i]) * 0.12;
+          const target = Math.max(0, 1 - dist / (vh * 1.0));
+          const e = reducedMotion ? (target > 0.4 ? 1 : 0) : env[i] + (target - env[i]) * 0.14;
           env[i] = e;
           el.style.setProperty("--e", e.toFixed(3));
           el.classList.toggle("lit", e > 0.35);
@@ -189,7 +187,6 @@ export default function Universe() {
     setFormationName("");
   };
 
-  const hoverCh = hoverSlug ? CHAPTERS.find((c) => c.slug === hoverSlug) : null;
   const detail = detailSlug ? CHAPTERS.find((c) => c.slug === detailSlug) : null;
   const revealed = phase === "zoom" || phase === "gone";
 
@@ -200,9 +197,6 @@ export default function Universe() {
         chartMode={chartMode}
         marks={marks}
         onToggleMark={toggleMark}
-        onHover={setHoverSlug}
-        onOpen={openDetail}
-        onWish={() => setWishCount((c) => c + 1)}
         revealed={revealed}
       />
 
@@ -297,29 +291,55 @@ export default function Universe() {
         {CHAPTERS.map((ch, i) => {
           const at = ch.atmosphere || { glow: ch.accent };
           const glowCss = `${at.glow[0]},${at.glow[1]},${at.glow[2]}`;
+          const fx = (ch.focalPoint?.x ?? 0.5) * 100;
+          const fy = (ch.focalPoint?.y ?? 0.5) * 100;
           return (
             <section
               key={ch.id}
               data-chapter={i}
-              className={`ch ${ch.infoSide || (i % 2 === 0 ? "left" : "right")}`}
+              className="ch"
               style={{
                 height: `${SCROLL.chapterVh}vh`,
                 "--ch-glow": glowCss,
               }}
               aria-label={`Region ${ch.id}: ${ch.name}, ${ch.object}`}
             >
-              <div className="ch-label">
-                <span className="ch-index rv rv-1">
-                  <span className="ch-num">{ch.id}</span>
-                  <span className="ch-cat">{ch.category}</span>
-                </span>
-                <h2 className="ch-name rv rv-2">{ch.name}</h2>
-                <p className="ch-desig rv rv-3">{ch.designation}</p>
-                <p className="ch-teaser rv rv-4">{ch.teaser}</p>
-                <p className="ch-invite rv rv-5">
-                  <span>{ch.invitation}</span>
-                  <span className="ch-invite-hint">{ch.sub}</span>
-                </p>
+              <div className="ch-stage" onClick={() => !chartMode && openDetail(ch.slug)}>
+                <img className="ch-atmo-img" src={ch.image} alt="" aria-hidden="true" loading="lazy" />
+                <div className="ch-world" aria-hidden="true">
+                  <img
+                    src={ch.image}
+                    alt=""
+                    loading="lazy"
+                    style={{ objectPosition: `${fx.toFixed(1)}% ${fy.toFixed(1)}%` }}
+                  />
+                </div>
+                <div className="ch-scrim" aria-hidden="true" />
+                <div className="ch-label">
+                  <p className="ch-kicker rv rv-1">
+                    <span className="ch-num"># {ch.id}</span>
+                    <span className="ch-cat">{ch.category}</span>
+                  </p>
+                  <h2 className="ch-name rv rv-2">{ch.name}</h2>
+                  <p className="ch-desig rv rv-3">{ch.designation}</p>
+                  <p className="ch-desc rv rv-4">{ch.description}</p>
+                  <dl className="ch-meta rv rv-5">
+                    <div><dt>object</dt><dd>{ch.object}</dd></div>
+                    <div><dt>type</dt><dd>{ch.type || ch.structure}</dd></div>
+                    <div><dt>distance</dt><dd>{ch.distance}</dd></div>
+                    <div><dt>location</dt><dd>{ch.location || ch.region}</dd></div>
+                    <div><dt>telescope</dt><dd>{ch.telescope}</dd></div>
+                    <div><dt>year</dt><dd>{ch.year}</dd></div>
+                  </dl>
+                  <p className="ch-credit rv rv-5">{ch.credit} · {ch.source}</p>
+                  <button
+                    type="button"
+                    className="ch-open rv rv-5"
+                    onClick={(e) => { e.stopPropagation(); openDetail(ch.slug); }}
+                  >
+                    enter →
+                  </button>
+                </div>
               </div>
             </section>
           );
@@ -330,26 +350,9 @@ export default function Universe() {
         </div>
       </main>
 
-      {hoverCh && !chartMode && !detail && (
-        <button
-          type="button"
-          className="discover"
-          onClick={() => openDetail(hoverCh.slug)}
-          style={{
-            "--hv-glow": `${(hoverCh.atmosphere?.glow || hoverCh.accent).join(",")}`,
-          }}
-          aria-label={`Enter ${hoverCh.name}`}
-        >
-          <span className="discover-desig">{hoverCh.designation}</span>
-          <span className="discover-name">{hoverCh.name}</span>
-          <span className="discover-go">{hoverCh.invitation} →</span>
-        </button>
-      )}
-
       {detail && <DetailView detail={detail} onClose={closeDetail} />}
 
       <p className="sr-only" role="status" aria-live="polite">
-        {wishCount > 0 ? `Wish recorded. ${wishCount} total.` : ""}
         {formationName ? ` Formation recorded as ${formationName}.` : ""}
         {detail ? `Entered ${detail.name}.` : ""}
       </p>
