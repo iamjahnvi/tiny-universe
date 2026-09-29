@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Tiny Universe · 1024 master · dark background -->
+  <defs>
+    <radialGradient id="tm-bg" cx="50%" cy="46%" r="75%">
+      <stop offset="0%" stop-color="#0B0D22"/>
+      <stop offset="45%" stop-color="#070814"/>
+      <stop offset="100%" stop-color="#05050A"/>
+    </radialGradient>
+    <radialGradient id="tm-core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="22%" stop-color="#E9EDFF"/>
+      <stop offset="48%" stop-color="#A7B0FF" stop-opacity="0.75"/>
+      <stop offset="75%" stop-color="#6E5BFF" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#6E5BFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tm-armA" x1="15%" y1="85%" x2="90%" y2="10%">
+      <stop offset="0%" stop-color="#F2F4FF"/>
+      <stop offset="38%" stop-color="#AEB7FF"/>
+      <stop offset="72%" stop-color="#7460FF"/>
+      <stop offset="100%" stop-color="#4A34B8"/>
+    </linearGradient>
+    <linearGradient id="tm-armB" x1="85%" y1="15%" x2="10%" y2="90%">
+      <stop offset="0%" stop-color="#F2F4FF"/>
+      <stop offset="38%" stop-color="#A3ADFF"/>
+      <stop offset="72%" stop-color="#6A55F0"/>
+      <stop offset="100%" stop-color="#3E2C9E"/>
+    </linearGradient>
+    <radialGradient id="tm-fade" cx="50%" cy="50%" r="50%">
+      <stop offset="60%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="80%" stop-color="#000" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="1"/>
+    </radialGradient>
+    <mask id="tm-edge">
+      <rect x="0" y="0" width="1024" height="1024" fill="url(#tm-fade)"/>
+    </mask>
+  </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#tm-bg)"/>
+
+  <!-- faint outer wisp: universe continues beyond the icon -->
+  <g mask="url(#tm-edge)" fill="none" stroke-linecap="round">
+    <path d="M512 512 C600 496 680 440 696 352 C712 264 656 184 556 160 C456 136 352 188 332 280" stroke="#3B349E" stroke-width="72" opacity="0.35"/>
+    <path d="M512 512 C424 528 344 584 328 672 C312 760 368 840 468 864 C568 888 672 836 692 744" stroke="#342B8C" stroke-width="72" opacity="0.35"/>
+
+    <g opacity="0.55">
+      <path d="M512 512 C592 496 664 440 680 352 C696 264 640 184 540 160 C440 136 336 188 316 280" stroke="#4E46D6" stroke-width="120"/>
+      <path d="M512 512 C432 528 360 584 344 672 C328 760 384 840 484 864 C584 888 688 836 708 744" stroke="#3E2C9E" stroke-width="120"/>
+    </g>
+
+    <path d="M512 512 C592 496 664 440 680 352 C696 264 640 184 540 160 C440 136 336 188 316 280" stroke="url(#tm-armA)" stroke-width="76"/>
+    <path d="M512 512 C432 528 360 584 344 672 C328 760 384 840 484 864 C584 888 688 836 708 744" stroke="url(#tm-armB)" stroke-width="76"/>
+
+    <path d="M512 512 C576 500 624 460 636 400 C648 340 612 288 544 272 C476 256 412 292 400 352" stroke="#EFF2FF" stroke-width="22" opacity="0.9"/>
+    <path d="M512 512 C448 524 400 564 388 624 C376 684 412 736 480 752 C548 768 612 732 624 672" stroke="#E7EBFF" stroke-width="22" opacity="0.85"/>
+
+    <circle cx="512" cy="512" r="208" fill="url(#tm-core)"/>
+    <circle cx="512" cy="512" r="84" fill="#F3F5FF"/>
+    <circle cx="512" cy="512" r="36" fill="#FFFFFF"/>
+  </g>
+</svg>

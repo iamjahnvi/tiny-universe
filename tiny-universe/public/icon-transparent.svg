@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Tiny Universe · transparent master · symbol only, no background -->
+  <!-- Centered circular composition: luminous core, two stellar arms -->
+  <!-- dissolving into darkness. Use on any background. -->
+  <defs>
+    <radialGradient id="tut-core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="28%" stop-color="#E3E8FF"/>
+      <stop offset="58%" stop-color="#9AA3FF" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#6E5BFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tut-armA" x1="15%" y1="85%" x2="90%" y2="10%">
+      <stop offset="0%" stop-color="#F0F3FF"/>
+      <stop offset="40%" stop-color="#A7B0FF"/>
+      <stop offset="75%" stop-color="#6E5BFF"/>
+      <stop offset="100%" stop-color="#4A34B8" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="tut-armB" x1="85%" y1="15%" x2="10%" y2="90%">
+      <stop offset="0%" stop-color="#F0F3FF"/>
+      <stop offset="40%" stop-color="#9BA6FF"/>
+      <stop offset="75%" stop-color="#6550E8"/>
+      <stop offset="100%" stop-color="#3E2C9E" stop-opacity="0.9"/>
+    </linearGradient>
+    <radialGradient id="tut-fade" cx="50%" cy="50%" r="50%">
+      <stop offset="62%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="82%" stop-color="#000000" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="1"/>
+    </radialGradient>
+    <mask id="tut-edge">
+      <rect x="0" y="0" width="512" height="512" fill="url(#tut-fade)"/>
+    </mask>
+  </defs>
+
+  <g mask="url(#tut-edge)">
+    <g fill="none" stroke-linecap="round">
+      <!-- deep glow bed -->
+      <g opacity="0.5">
+        <path d="M256 256 C296 248 332 220 340 176 C348 132 322 92 272 80 C222 68 172 94 162 140" stroke="#4E46D6" stroke-width="88"/>
+        <path d="M256 256 C216 264 180 292 172 336 C164 380 190 420 240 432 C290 444 340 418 350 372" stroke="#3E2C9E" stroke-width="88"/>
+      </g>
+      <!-- mid arms -->
+      <path d="M256 256 C296 248 332 220 340 176 C348 132 322 92 272 80 C222 68 172 94 162 140" stroke="url(#tut-armA)" stroke-width="54"/>
+      <path d="M256 256 C216 264 180 292 172 336 C164 380 190 420 240 432 C290 444 340 418 350 372" stroke="url(#tut-armB)" stroke-width="54"/>
+      <!-- bright inner filament -->
+      <path d="M256 256 C288 250 312 230 318 200 C324 170 306 144 272 136 C238 128 206 146 200 176" stroke="#EDF1FF" stroke-width="16" opacity="0.85"/>
+      <path d="M256 256 C224 262 200 282 194 312 C188 342 206 368 240 376 C274 384 306 366 312 336" stroke="#E4E9FF" stroke-width="16" opacity="0.8"/>
+    </g>
+
+    <!-- halo + core -->
+    <circle cx="256" cy="256" r="104" fill="url(#tut-core)" opacity="0.95"/>
+    <circle cx="256" cy="256" r="42" fill="#F2F5FF"/>
+    <circle cx="256" cy="256" r="18" fill="#FFFFFF"/>
+  </g>
+</svg>

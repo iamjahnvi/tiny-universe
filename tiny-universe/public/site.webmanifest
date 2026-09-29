@@ -1,0 +1,14 @@
+{
+  "name": "Tiny Universe",
+  "short_name": "Tiny Universe",
+  "description": "A cinematic descent through Hubble worlds. Enter the universe.",
+  "start_url": ".",
+  "display": "fullscreen",
+  "background_color": "#05050A",
+  "theme_color": "#05050A",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-transparent-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
