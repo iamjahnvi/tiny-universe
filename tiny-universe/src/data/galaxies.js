@@ -1,29 +1,32 @@
 // ─────────────────────────────────────────────────────────────
-// Tiny Universe · art-directed destination model
+// Tiny Universe · destination model — worlds, not pictures.
 //
-// Every object is a cinematic environment, not a rectangular asset.
-// The source image's aspect ratio NEVER dictates composition — each
-// destination declares its own focal point, scale, position, palette
-// and information placement. The renderer + DOM read this config.
+// Each object is art-directed as a cosmic ENVIRONMENT. The source image
+// is raw material: the renderer crops around focalPoint, feathers every
+// edge into atmosphere, and places the body inside depth. No destination
+// is ever rendered as a rectangle.
 //
 // Fields:
-//   focalPoint      {x,y} 0..1 — the subject inside the SOURCE image
-//                            that must survive the crop.
-//   focalMobile     {x,y}      — override for narrow screens.
-//   frame           {w,h}      — cinematic viewport size as fractions
-//                            of (W,H). Consistent language, tuned per object.
-//   scale           number     — art-directed zoom into the plate.
-//   infoSide        left|right — where the editorial layer sits so it
-//                            never covers the focal subject.
+//   form            spiral | collision | pillars | veil | swarm |
+//                   remnant | deepfield | nebula — distinct composition.
+//   focalPoint      {x,y} 0..1 — subject inside the SOURCE that survives.
+//   focalMobile     {x,y} — override for narrow screens.
+//   scale           art-directed zoom into the plate.
+//   infoSide        left|right — editorial float side, never over subject.
+//   rotation        slow angular drift (rad/s scale), 0 = still.
+//   depth           0..1 — how enveloping the environment is.
+//   envelope        true — camera enters the medium (nebulae / veil).
 //   atmosphere      {primary, secondary, glow, particle}
+//   visual          {focalPoint, scale, position, atmosphere, accentColor,
+//                    depth, rotation} — mirrors above for clean consumers.
 // ─────────────────────────────────────────────────────────────
 
 export const SCROLL = {
-  introVh: 130,
-  // Long dwell per galaxy: approach → dominate → recede, with a real
-  // breathing transition zone between reigns. ~2+ meaningful scrolls apart.
-  chapterVh: 340,
-  outroVh: 170,
+  // A true descent: long approach, long dwell, real transition voids
+  // between worlds. Each reign is ~5 viewports of travel.
+  introVh: 170,
+  chapterVh: 520,
+  outroVh: 240,
 };
 
 export function scrollGeometry() {
@@ -35,7 +38,20 @@ export function scrollGeometry() {
   return { totalVh, travelVh, centerOf };
 }
 
-export const CHAPTERS = [
+const withVisual = (ch) => ({
+  ...ch,
+  visual: {
+    focalPoint: ch.focalPoint,
+    scale: ch.scale,
+    position: ch.infoSide,
+    atmosphere: ch.atmosphere,
+    accentColor: ch.accent,
+    depth: ch.depth,
+    rotation: ch.rotation,
+  },
+});
+
+const RAW = [
   {
     id: "01",
     slug: "pillars-of-creation",
@@ -44,7 +60,8 @@ export const CHAPTERS = [
     category: "STAR-FORMING NEBULA",
     object: "Eagle Nebula · M16",
     sub: "towers of gas and dark dust",
-    teaser: "Cold towers of gas where young stars ignite — lit from above.",
+    teaser: "Cold towers of gas where young stars ignite.",
+    invitation: "ENTER THE NURSERY",
     image: "/hubble/pillars.jpg",
     description:
       "Towering columns of cold gas and dark dust, sculpted by the winds of newborn stars. The tallest finger stretches light-years — a stellar nursery caught mid-creation.",
@@ -57,13 +74,16 @@ export const CHAPTERS = [
     year: "1995 · 2014 revisit",
     credit: "NASA, ESA & Hubble Heritage",
     source: "NASA Image Library · PIA03096",
-    // ── art direction ──
-    // Pillars is a tall plate: anchor on the central column cluster.
+    // ── composition: TOWERS — camera descends past massive vertical
+    // structures. Enveloping: the plate is drawn huge, surrounding view.
+    form: "pillars",
     focalPoint: { x: 0.46, y: 0.42 },
     focalMobile: { x: 0.5, y: 0.36 },
-    frame: { w: 0.62, h: 0.6 },
-    scale: 1.18,
+    scale: 1.35,
     infoSide: "right",
+    rotation: 0,
+    depth: 0.95,
+    envelope: true,
     atmosphere: {
       primary: [232, 150, 90],
       secondary: [140, 90, 200],
@@ -82,7 +102,8 @@ export const CHAPTERS = [
     category: "INTERACTING GALAXIES",
     object: "Arp 273",
     sub: "two galaxies in embrace",
-    teaser: "Gravity sculpting a tidal tail into the curve of a rose.",
+    teaser: "Gravity sculpting a tidal tail into a rose.",
+    invitation: "APPROACH THE ROSE",
     image: "/hubble/rose.jpg",
     description:
       "Two galaxies locked in gravitational embrace. The larger ring galaxy drags a plume of stars from its companion — a rose drawn in tidal starlight.",
@@ -95,13 +116,16 @@ export const CHAPTERS = [
     year: "2011",
     credit: "NASA / ESA Hubble",
     source: "NASA Image Library · Arp 273",
-    // Rose: subject sits upper-right of a wide plate — push frame left,
-    // keep copy on the right where space is empty.
+    // ── composition: SPIRAL WORLD — huge rotating structure, circular
+    // feathered body, orbital particles, radial core glow.
+    form: "spiral",
     focalPoint: { x: 0.62, y: 0.38 },
     focalMobile: { x: 0.58, y: 0.4 },
-    frame: { w: 0.64, h: 0.56 },
-    scale: 1.22,
+    scale: 1.3,
     infoSide: "right",
+    rotation: 0.05,
+    depth: 0.45,
+    envelope: false,
     atmosphere: {
       primary: [190, 130, 220],
       secondary: [90, 160, 230],
@@ -120,7 +144,8 @@ export const CHAPTERS = [
     category: "YOUNG STAR CLUSTER",
     object: "Starburst Cluster",
     sub: "a cluster bursting into life",
-    teaser: "One of the most violent starbursts known — burning blue.",
+    teaser: "Thousands of young suns burning blue.",
+    invitation: "ENTER THE SWARM",
     image: "/hubble/ngc3603.jpg",
     description:
       "A compact furnace of thousands of young, massive stars. Their ultraviolet fire carves the surrounding cloud into glowing blue and cyan ramparts.",
@@ -133,12 +158,16 @@ export const CHAPTERS = [
     year: "Hubble archive",
     credit: "NASA / ESA Hubble",
     source: "NASA Image Library",
-    // Cluster core is centered-bright — frame it center, copy low-left.
+    // ── composition: SWARM — dense spherical formation surrounding the
+    // camera. Small bright core + hundreds of orbiting points.
+    form: "swarm",
     focalPoint: { x: 0.5, y: 0.46 },
     focalMobile: { x: 0.5, y: 0.42 },
-    frame: { w: 0.6, h: 0.58 },
-    scale: 1.15,
+    scale: 1.18,
     infoSide: "left",
+    rotation: 0.02,
+    depth: 0.8,
+    envelope: false,
     atmosphere: {
       primary: [120, 200, 240],
       secondary: [90, 120, 255],
@@ -157,7 +186,8 @@ export const CHAPTERS = [
     category: "COLLIDING GALAXIES",
     object: "NGC 4038 · NGC 4039",
     sub: "two systems · one gravity",
-    teaser: "Two galaxies mid-collision, flinging tails of newborn stars.",
+    teaser: "Two galaxies mid-collision, flinging newborn stars.",
+    invitation: "WITNESS THE COLLISION",
     image: "/hubble/antennae.jpg",
     description:
       "Two spiral galaxies caught in collision, flinging tidal tails hundreds of thousands of light-years long. Blue knots along the tails are firestorms of new stars.",
@@ -170,12 +200,16 @@ export const CHAPTERS = [
     year: "Hubble archive",
     credit: "NASA / JPL",
     source: "NASA Image Library · PIA04205",
-    // Wide dramatic plate — cores sit slightly left; keep tails in frame.
+    // ── composition: COLLISION — wide luminous churn, slow rotation,
+    // dual-core glow, debris particles flung outward.
+    form: "collision",
     focalPoint: { x: 0.44, y: 0.5 },
     focalMobile: { x: 0.5, y: 0.48 },
-    frame: { w: 0.68, h: 0.54 },
-    scale: 1.12,
+    scale: 1.28,
     infoSide: "right",
+    rotation: -0.035,
+    depth: 0.55,
+    envelope: false,
     atmosphere: {
       primary: [230, 110, 140],
       secondary: [120, 110, 255],
@@ -194,7 +228,8 @@ export const CHAPTERS = [
     category: "DARK NEBULA",
     object: "Barnard 33",
     sub: "a silhouette in ember light",
-    teaser: "A dark silhouette rising before a wall of ember hydrogen.",
+    teaser: "A dark silhouette rising before ember hydrogen.",
+    invitation: "DRIFT INTO THE DARK",
     image: "/hubble/horsehead.jpg",
     description:
       "A dense tongue of dust rising before the glowing hydrogen of IC 434. Backlit in deep red, the horsehead is a shadow the size of a stellar nursery.",
@@ -207,13 +242,16 @@ export const CHAPTERS = [
     year: "2013",
     credit: "NASA / ESA Hubble",
     source: "NASA Image Library · PIA04215",
-    // Tall plate, silhouette left-of-center — frame right-weighted,
-    // copy on the right in the glowing field.
+    // ── composition: VEIL — a massive dark wall towering above/below.
+    // Camera passes alongside it; ember field surrounds.
+    form: "veil",
     focalPoint: { x: 0.42, y: 0.44 },
     focalMobile: { x: 0.5, y: 0.4 },
-    frame: { w: 0.62, h: 0.6 },
-    scale: 1.2,
+    scale: 1.4,
     infoSide: "right",
+    rotation: 0,
+    depth: 0.9,
+    envelope: true,
     atmosphere: {
       primary: [220, 110, 70],
       secondary: [180, 60, 60],
@@ -232,7 +270,8 @@ export const CHAPTERS = [
     category: "SUPERNOVA REMNANT",
     object: "M1 · Taurus A",
     sub: "the remains of a star",
-    teaser: "A supernova's expanding heart, still driven by a pulsar wind.",
+    teaser: "A supernova's expanding heart, still racing outward.",
+    invitation: "ENTER THE REMNANT",
     image: "/hubble/crab.jpg",
     description:
       "The expanding remnant of a star seen to explode in 1054. Filaments of shattered gas still race outward, lit from within by a spinning pulsar's wind.",
@@ -245,12 +284,16 @@ export const CHAPTERS = [
     year: "2005",
     credit: "NASA / ESA Hubble",
     source: "NASA Image Library · PIA03606",
-    // Mottled square-ish plate — center the heart, copy low edge.
+    // ── composition: REMNANT — wispy expanding shell, breathing glow,
+    // filaments drifting outward from a hot heart.
+    form: "remnant",
     focalPoint: { x: 0.5, y: 0.5 },
     focalMobile: { x: 0.5, y: 0.48 },
-    frame: { w: 0.64, h: 0.58 },
-    scale: 1.14,
+    scale: 1.26,
     infoSide: "left",
+    rotation: 0.015,
+    depth: 0.65,
+    envelope: false,
     atmosphere: {
       primary: [240, 120, 80],
       secondary: [200, 70, 120],
@@ -270,6 +313,7 @@ export const CHAPTERS = [
     object: "Hubble Deep Survey",
     sub: "every point · a galaxy",
     teaser: "Nearly 10,000 galaxies in a stare into the dark.",
+    invitation: "FALL THROUGH DEEP TIME",
     image: "/hubble/deepfield.jpg",
     description:
       "A long stare into near-nothingness that revealed nearly 10,000 galaxies — some seen as they were 13 billion years ago. Every speck of light is an island universe.",
@@ -282,12 +326,17 @@ export const CHAPTERS = [
     year: "2004–2013",
     credit: "NASA / ESA Hubble",
     source: "NASA Image Library",
-    // Minimal atmosphere by design: infinite tiny objects, enormous depth.
+    // ── composition: DEEP FIELD — no single body. Thousands of distant
+    // galaxies distributed through enormous depth; the plate becomes a
+    // vast faint expanse + procedural depth grain.
+    form: "deepfield",
     focalPoint: { x: 0.5, y: 0.5 },
     focalMobile: { x: 0.5, y: 0.5 },
-    frame: { w: 0.66, h: 0.56 },
-    scale: 1.08,
+    scale: 1.5,
     infoSide: "right",
+    rotation: 0,
+    depth: 1.0,
+    envelope: true,
     atmosphere: {
       primary: [200, 200, 210],
       secondary: [140, 150, 190],
@@ -306,7 +355,8 @@ export const CHAPTERS = [
     category: "STELLAR NURSERY",
     object: "NGC 3372",
     sub: "where giants are born",
-    teaser: "A luminous finale — pillars and giants in teal and gold.",
+    teaser: "Pillars and giants in teal and gold.",
+    invitation: "BE SWALLOWED BY LIGHT",
     image: "/hubble/carina.jpg",
     description:
       "A vast nursery of pillars and evaporating globules, home to some of the most massive stars known. The finale burns luminous — teal gas, gold dust, white fire.",
@@ -319,12 +369,16 @@ export const CHAPTERS = [
     year: "Hubble archive",
     credit: "NASA / ESA Hubble",
     source: "NASA Image Library",
-    // Finale: brightest region upper-center — frame wide, copy left.
+    // ── composition: NEBULA — a huge cloud surrounding the camera.
+    // The user enters it; brightest region glows above.
+    form: "nebula",
     focalPoint: { x: 0.52, y: 0.4 },
     focalMobile: { x: 0.5, y: 0.38 },
-    frame: { w: 0.68, h: 0.58 },
-    scale: 1.16,
+    scale: 1.45,
     infoSide: "left",
+    rotation: 0,
+    depth: 1.0,
+    envelope: true,
     atmosphere: {
       primary: [240, 180, 110],
       secondary: [90, 200, 190],
@@ -336,3 +390,5 @@ export const CHAPTERS = [
     zone: { bg: [7, 11, 8], wash: [210, 190, 150] },
   },
 ];
+
+export const CHAPTERS = RAW.map(withVisual);

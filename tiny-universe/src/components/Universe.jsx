@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import CosmicScene from "./CosmicScene";
+import DetailView from "./DetailView";
 import UniverseHUD from "./UniverseHUD";
 import AmbientSound from "./AmbientSound";
 import useReducedMotion from "../hooks/useReducedMotion";
@@ -314,13 +315,11 @@ export default function Universe() {
                 </span>
                 <h2 className="ch-name rv rv-2">{ch.name}</h2>
                 <p className="ch-desig rv rv-3">{ch.designation}</p>
-                <p className="ch-desc rv rv-4">{ch.description}</p>
-                <dl className="ch-meta rv rv-5">
-                  <div><dt>object</dt><dd>{ch.object}</dd></div>
-                  <div><dt>distance</dt><dd>{ch.distance}</dd></div>
-                  <div><dt>telescope</dt><dd>{ch.telescope}</dd></div>
-                </dl>
-                <p className="ch-credit rv rv-5">{ch.credit} · {ch.source}</p>
+                <p className="ch-teaser rv rv-4">{ch.teaser}</p>
+                <p className="ch-invite rv rv-5">
+                  <span>{ch.invitation}</span>
+                  <span className="ch-invite-hint">{ch.sub}</span>
+                </p>
               </div>
             </section>
           );
@@ -339,65 +338,15 @@ export default function Universe() {
           style={{
             "--hv-glow": `${(hoverCh.atmosphere?.glow || hoverCh.accent).join(",")}`,
           }}
+          aria-label={`Enter ${hoverCh.name}`}
         >
-          <span className="discover-top">
-            <span className="discover-num">{hoverCh.id}</span>
-            <span className="discover-cat">{hoverCh.category}</span>
-          </span>
+          <span className="discover-desig">{hoverCh.designation}</span>
           <span className="discover-name">{hoverCh.name}</span>
-          <span className="discover-teaser">{hoverCh.teaser}</span>
-          <span className="discover-go">enter →</span>
+          <span className="discover-go">{hoverCh.invitation} →</span>
         </button>
       )}
 
-      {detail && (() => {
-        const dat = detail.atmosphere || { primary: detail.accent, secondary: detail.fog, glow: detail.accent };
-        const fx = (detail.focalPoint?.x ?? 0.5) * 100;
-        const fy = (detail.focalPoint?.y ?? 0.5) * 100;
-        return (
-          <div
-            className="detail"
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${detail.name}, ${detail.object}`}
-            style={{
-              "--d-primary": `${dat.primary.join(",")}`,
-              "--d-secondary": `${dat.secondary.join(",")}`,
-              "--d-glow": `${dat.glow.join(",")}`,
-            }}
-          >
-            <div className="detail-atmo" aria-hidden="true" />
-            <img
-              className="detail-bg"
-              src={detail.image}
-              alt=""
-              style={{ objectPosition: `${fx.toFixed(1)}% ${fy.toFixed(1)}%` }}
-            />
-            <div className="detail-scrim" aria-hidden="true" />
-            <button type="button" className="detail-back" onClick={closeDetail} autoFocus>
-              ← return to universe
-            </button>
-            <div className="detail-body">
-              <p className="detail-kicker">
-                <span className="detail-num"># {detail.id}</span>
-                <span className="detail-cat">{detail.category}</span>
-              </p>
-              <h2 className="detail-name">{detail.name}</h2>
-              <p className="detail-object">{detail.designation}</p>
-              <p className="detail-desc">{detail.description}</p>
-              <dl className="detail-data">
-                <div><dt>object</dt><dd>{detail.object}</dd></div>
-                <div><dt>type</dt><dd>{detail.type || detail.structure}</dd></div>
-                <div><dt>distance</dt><dd>{detail.distance}</dd></div>
-                <div><dt>location</dt><dd>{detail.location || detail.region}</dd></div>
-                <div><dt>telescope</dt><dd>{detail.telescope}</dd></div>
-                <div><dt>year</dt><dd>{detail.year}</dd></div>
-              </dl>
-              <p className="detail-source">{detail.credit} · {detail.source}</p>
-            </div>
-          </div>
-        );
-      })()}
+      {detail && <DetailView detail={detail} onClose={closeDetail} />}
 
       <p className="sr-only" role="status" aria-live="polite">
         {wishCount > 0 ? `Wish recorded. ${wishCount} total.` : ""}
