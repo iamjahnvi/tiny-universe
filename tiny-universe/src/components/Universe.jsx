@@ -29,10 +29,10 @@ export default function Universe() {
   const [hoverSlug, setHoverSlug] = useState(null);
   const [detailSlug, setDetailSlug] = useState(slugFromHash);
   const pushedRef = useRef(false);
+  const trackRef = useRef(null);
+  const activeRef = useRef(-1);
   const reducedMotion = useReducedMotion();
 
-  // Black-screen infinity load: exactly ~3s. Assets preload silently
-  // underneath but never gate the timing — the aura is the experience.
   useEffect(() => {
     CHAPTERS.forEach((ch) => {
       const im = new Image();
@@ -45,7 +45,6 @@ export default function Universe() {
     let raf = 0;
     const tick = (now) => {
       const k = Math.min(1, (now - stamp) / DURATION);
-      // ease slightly so the tail feels like coalescing, not stalling
       const eased = k < 0.7 ? k / 0.7 : 0.7 + ((k - 0.7) / 0.3) * 0.3;
       setLoadPct(Math.min(100, Math.floor(eased * 100)));
       if (k < 1) raf = requestAnimationFrame(tick);
@@ -58,8 +57,6 @@ export default function Universe() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // After the 3s complete, the FIRST hover / move / touch / key press
-  // triggers the cinematic zoom-out. Reduced-motion users auto-enter.
   useEffect(() => {
     if (phase !== "await") return;
     if (reducedMotion) {
@@ -86,14 +83,12 @@ export default function Universe() {
     };
   }, [phase, reducedMotion]);
 
-  // Zoom-out runs its cinematic course (~2.6s), then the veil is gone.
   useEffect(() => {
     if (phase !== "zoom") return;
     const t = setTimeout(() => setPhase("gone"), reducedMotion ? 300 : 2600);
     return () => clearTimeout(t);
   }, [phase, reducedMotion]);
 
-  // Lock scroll while the void / zoom holds — the universe waits underneath.
   useEffect(() => {
     const locked = phase !== "gone" || detailSlug;
     document.body.style.overflow = locked ? "hidden" : "";
@@ -102,22 +97,46 @@ export default function Universe() {
     };
   }, [phase, detailSlug]);
 
-  // Chapter observation for the position readout + audio zoning.
+  // Progressive discovery: per-frame envelope per chapter drives staged
+  // CSS reveals (title → designation → description → metadata). No React
+  // state per frame — CSS vars on refs, one discrete active index.
   useEffect(() => {
-    const sections = Array.from(document.querySelectorAll("[data-chapter]"));
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((en) => {
-          if (en.isIntersecting) setActive(Number(en.target.dataset.chapter));
+    let raf = 0;
+    const env = new Array(CHAPTERS.length).fill(0);
+    const tick = () => {
+      const els = trackRef.current?.querySelectorAll("[data-chapter]");
+      if (els && els.length) {
+        const vh = window.innerHeight || 1;
+        let best = -1;
+        let bestE = 0;
+        els.forEach((el, i) => {
+          const r = el.getBoundingClientRect();
+          const center = r.top + r.height / 2;
+          const dist = Math.abs(center - vh / 2);
+          const target = Math.max(0, 1 - dist / (vh * 1.15));
+          const e = reducedMotion ? (target > 0.4 ? 1 : 0) : env[i] + (target - env[i]) * 0.12;
+          env[i] = e;
+          el.style.setProperty("--e", e.toFixed(3));
+          el.classList.toggle("lit", e > 0.35);
+          if (e > bestE) {
+            bestE = e;
+            best = i;
+          }
         });
-      },
-      { threshold: 0.55 }
-    );
-    sections.forEach((s) => io.observe(s));
-    return () => io.disconnect();
-  }, []);
+        if (bestE > 0.3 && best !== activeRef.current) {
+          activeRef.current = best;
+          setActive(best);
+        } else if (bestE <= 0.3 && activeRef.current !== -1) {
+          activeRef.current = -1;
+          setActive(-1);
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [reducedMotion]);
 
-  // SPA detail routing: hash changes open/close, back button included.
   useEffect(() => {
     const onHash = () => {
       pushedRef.current = false;
@@ -264,7 +283,7 @@ export default function Universe() {
         sound={<AmbientSound zone={active} />}
       />
 
-      <main className="track">
+      <main className="track" ref={trackRef}>
         <div className="gap" style={{ height: `${SCROLL.introVh}vh` }} aria-hidden="true">
           <div className="descend">
             <span>descend</span>
@@ -274,59 +293,111 @@ export default function Universe() {
           </div>
         </div>
 
-        {CHAPTERS.map((ch, i) => (
-          <section
-            key={ch.id}
-            data-chapter={i}
-            className={`ch left ${active === i ? "lit" : ""}`}
-            style={{ height: `${SCROLL.chapterVh}vh` }}
-            aria-label={`Region ${ch.id}: ${ch.name}, ${ch.object}`}
-          >
-            <div className="ch-label">
-              <span className="ch-num">{ch.id}</span>
-              <h2 className="ch-name">{ch.name}</h2>
-              <p className="ch-sub">{ch.sub}</p>
-            </div>
-          </section>
-        ))}
+        {CHAPTERS.map((ch, i) => {
+          const at = ch.atmosphere || { glow: ch.accent };
+          const glowCss = `${at.glow[0]},${at.glow[1]},${at.glow[2]}`;
+          return (
+            <section
+              key={ch.id}
+              data-chapter={i}
+              className={`ch ${ch.infoSide || (i % 2 === 0 ? "left" : "right")}`}
+              style={{
+                height: `${SCROLL.chapterVh}vh`,
+                "--ch-glow": glowCss,
+              }}
+              aria-label={`Region ${ch.id}: ${ch.name}, ${ch.object}`}
+            >
+              <div className="ch-label">
+                <span className="ch-index rv rv-1">
+                  <span className="ch-num">{ch.id}</span>
+                  <span className="ch-cat">{ch.category}</span>
+                </span>
+                <h2 className="ch-name rv rv-2">{ch.name}</h2>
+                <p className="ch-desig rv rv-3">{ch.designation}</p>
+                <p className="ch-desc rv rv-4">{ch.description}</p>
+                <dl className="ch-meta rv rv-5">
+                  <div><dt>object</dt><dd>{ch.object}</dd></div>
+                  <div><dt>distance</dt><dd>{ch.distance}</dd></div>
+                  <div><dt>telescope</dt><dd>{ch.telescope}</dd></div>
+                </dl>
+                <p className="ch-credit rv rv-5">{ch.credit} · {ch.source}</p>
+              </div>
+            </section>
+          );
+        })}
 
         <div className="gap outro" style={{ height: `${SCROLL.outroVh}vh` }} aria-hidden="true">
-          <p className="drift-in">no further data</p>
+          <p className="drift-in">no further data — the dark continues</p>
         </div>
       </main>
 
       {hoverCh && !chartMode && !detail && (
-        <button type="button" className="discover" onClick={() => openDetail(hoverCh.slug)}>
-          <span className="discover-num">{hoverCh.id}</span>
+        <button
+          type="button"
+          className="discover"
+          onClick={() => openDetail(hoverCh.slug)}
+          style={{
+            "--hv-glow": `${(hoverCh.atmosphere?.glow || hoverCh.accent).join(",")}`,
+          }}
+        >
+          <span className="discover-top">
+            <span className="discover-num">{hoverCh.id}</span>
+            <span className="discover-cat">{hoverCh.category}</span>
+          </span>
           <span className="discover-name">{hoverCh.name}</span>
+          <span className="discover-teaser">{hoverCh.teaser}</span>
           <span className="discover-go">enter →</span>
         </button>
       )}
 
-      {detail && (
-        <div className="detail" role="dialog" aria-modal="true" aria-label={`${detail.name}, ${detail.object}`}>
-          <img className="detail-bg" src={detail.image} alt="" />
-          <div className="detail-scrim" aria-hidden="true" />
-          <button type="button" className="detail-back" onClick={closeDetail} autoFocus>
-            ← return
-          </button>
-          <div className="detail-body">
-            <p className="detail-num"># {detail.id}</p>
-            <h2 className="detail-name">{detail.name}</h2>
-            <p className="detail-object">{detail.object}</p>
-            <p className="detail-desc">{detail.description}</p>
-            <dl className="detail-data">
-              <div><dt>distance</dt><dd>{detail.distance}</dd></div>
-              <div><dt>structure</dt><dd>{detail.structure}</dd></div>
-              <div><dt>region</dt><dd>{detail.region}</dd></div>
-              <div><dt>telescope</dt><dd>{detail.telescope}</dd></div>
-              <div><dt>year</dt><dd>{detail.year}</dd></div>
-              <div><dt>credit</dt><dd>{detail.credit}</dd></div>
-            </dl>
-            <p className="detail-source">{detail.source}</p>
+      {detail && (() => {
+        const dat = detail.atmosphere || { primary: detail.accent, secondary: detail.fog, glow: detail.accent };
+        const fx = (detail.focalPoint?.x ?? 0.5) * 100;
+        const fy = (detail.focalPoint?.y ?? 0.5) * 100;
+        return (
+          <div
+            className="detail"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${detail.name}, ${detail.object}`}
+            style={{
+              "--d-primary": `${dat.primary.join(",")}`,
+              "--d-secondary": `${dat.secondary.join(",")}`,
+              "--d-glow": `${dat.glow.join(",")}`,
+            }}
+          >
+            <div className="detail-atmo" aria-hidden="true" />
+            <img
+              className="detail-bg"
+              src={detail.image}
+              alt=""
+              style={{ objectPosition: `${fx.toFixed(1)}% ${fy.toFixed(1)}%` }}
+            />
+            <div className="detail-scrim" aria-hidden="true" />
+            <button type="button" className="detail-back" onClick={closeDetail} autoFocus>
+              ← return to universe
+            </button>
+            <div className="detail-body">
+              <p className="detail-kicker">
+                <span className="detail-num"># {detail.id}</span>
+                <span className="detail-cat">{detail.category}</span>
+              </p>
+              <h2 className="detail-name">{detail.name}</h2>
+              <p className="detail-object">{detail.designation}</p>
+              <p className="detail-desc">{detail.description}</p>
+              <dl className="detail-data">
+                <div><dt>object</dt><dd>{detail.object}</dd></div>
+                <div><dt>type</dt><dd>{detail.type || detail.structure}</dd></div>
+                <div><dt>distance</dt><dd>{detail.distance}</dd></div>
+                <div><dt>location</dt><dd>{detail.location || detail.region}</dd></div>
+                <div><dt>telescope</dt><dd>{detail.telescope}</dd></div>
+                <div><dt>year</dt><dd>{detail.year}</dd></div>
+              </dl>
+              <p className="detail-source">{detail.credit} · {detail.source}</p>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <p className="sr-only" role="status" aria-live="polite">
         {wishCount > 0 ? `Wish recorded. ${wishCount} total.` : ""}
